@@ -1,0 +1,17 @@
+﻿rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Audio files can only be written by authenticated users
+    // No direct read access - only via signed URLs from Cloud Functions
+    match /audio/{fileName} {
+      allow write: if request.auth != null;
+      allow read: if false;
+    }
+    
+    // Deny all other paths
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
