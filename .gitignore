@@ -53,3 +53,111 @@ dkms.conf
 
 # debug information files
 *.dwo
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.idea/
+.vscode/
+*.swp
+*.swo
+*.tmp
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment files
+.env
+.env.*
+
+# Node / Firebase Functions
+node_modules/
+dist/
+coverage/
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+*.local
+
+# Flutter / Dart
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+build/
+**/build/
+.flutter-plugins
+.flutter-plugins-dependencies
+*.iml
+
+# Android (Flutter)
+**/android/.gradle/
+**/android/captures/
+**/android/local.properties
+**/android/**/GeneratedPluginRegistrant.java
+**/android/**/GeneratedPluginRegistrant.kotlin
+**/android/**/GeneratedPluginRegistrant.kt
+**/android/**/GeneratedPluginRegistrant.*
+**/android/app/debug.keystore
+**/android/key.properties
+
+# iOS (Flutter)
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/ephemeral/
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.podspec
+**/ios/Flutter/App.framework
+**/ios/Flutter/App.framework.dSYM
+**/ios/Pods/
+**/ios/Runner.xcworkspace/
+**/ios/Runner.xcworkspace
+**/ios/Runner.xcworkspace/xcuserdata/
+**/ios/Runner.xcodeproj/xcuserdata/
+**/ios/Runner.xcodeproj/project.xcworkspace/
+
+# ESP-IDF / ESP-ADF
+**/build/
+**/sdkconfig
+**/sdkconfig.old
+**/sdkconfig.defaults
+**/sdkconfig.*
+**/managed_components/
+**/dependencies.lock
+**/cmake-build-*/
+**/CMakeCache.txt
+**/CMakeFiles/
+**/compile_commands.json
+**/component_project_vars.mk
+**/partition_table/partition-table.bin
+**/flasher_args.json
+**/flash_args
+**/*.bin
+**/*.elf
+**/*.map
+**/*.dmp
+**/*.srec
+**/*.uf2
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+ENV/
+env/
+pip-wheel-metadata/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# Misc
+*.bak
+*.orig
