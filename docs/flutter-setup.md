@@ -5,62 +5,70 @@ This guide helps you install and configure Flutter for the RemoteAlarm mobile ap
 ## Prerequisites
 
 - Windows 10/11 (64-bit)
+- Visual Studio Code
 - Git for Windows
 - PowerShell 5.0 or newer
 - At least 1.64 GB disk space (excluding IDE/tools)
 
-## Step 1: Install Flutter SDK
+## Step 1: Install Flutter Extension in VS Code
 
-### Download Flutter
+1. Open Visual Studio Code
+2. Go to the Extensions view (or press `Ctrl+Shift+X`)
+3. Search for "Flutter"
+4. Click **Install** on the Flutter extension (by Dart Code)
+   - This will also install the Dart extension automatically
 
-1. Download the Flutter SDK from: https://flutter.dev/docs/get-started/install/windows
-2. Extract the zip file to a location (e.g., `C:\src\flutter`)
-3. **Important**: Do NOT install Flutter in `C:\Program Files\` (requires elevated privileges)
+## Step 2: Install Flutter SDK via VS Code
 
-### Add Flutter to PATH
+1. Open the command palette in VS Code:
+   - Go to **View > Command Palette** or press `Ctrl + Shift + P`
 
-1. Open **Environment Variables**:
-   - Press `Win + X`  System  Advanced system settings  Environment Variables
-2. Under **User variables**, find `Path` and click **Edit**
-3. Add new entry: `C:\src\flutter\bin` (adjust to your installation path)
-4. Click **OK** to save
+2. Type `flutter` and select **Flutter: New Project**
+
+3. VS Code will prompt you to locate the Flutter SDK
+   - Select **Download SDK**
+
+4. When the **Select Folder for Flutter SDK** dialog displays, choose where you want to install Flutter
+   - Recommended: `C:\src\flutter`
+   - Click **Clone Flutter**
+
+5. Wait for the download to complete
+   - VS Code displays: "Downloading the Flutter SDK. This may take a few minutes."
+   - If the download seems stuck, click **Cancel** and restart
+
+6. Click **Add SDK to PATH** when prompted
+
+7. When successful, you'll see: "The Flutter SDK was added to your PATH"
+
+8. If prompted about Google Analytics, click **OK** if you agree
+
+9. **Important**: To ensure Flutter is available in all terminals:
+   - Close and reopen all terminal windows
+   - Restart VS Code
 
 ### Verify Installation
 
-Open a new PowerShell window:
+Open a new PowerShell terminal in VS Code:
 
 ```powershell
 flutter --version
 flutter doctor
 ```
 
-## Step 2: Install Required Tools
+## Step 3: Install Additional Tools
 
 Flutter doctor will show what's missing. Install the following:
 
-### 1. Visual Studio Code (Recommended)
+### Android Studio (for Android development)
 
-```powershell
-# Download from: https://code.visualstudio.com/
-```
+1. Download from: https://developer.android.com/studio
+2. During installation, make sure to install:
+   - Android SDK
+   - Android SDK Command-line Tools
+   - Android SDK Build-Tools
+   - Android Emulator
 
-After installation, install Flutter extensions:
-- Flutter (by Dart Code)
-- Dart (by Dart Code)
-
-### 2. Android Studio (for Android development)
-
-```powershell
-# Download from: https://developer.android.com/studio
-```
-
-During installation:
-- Install Android SDK
-- Install Android SDK Command-line Tools
-- Install Android SDK Build-Tools
-- Install Android Emulator
-
-### 3. Accept Android Licenses
+### Accept Android Licenses
 
 ```powershell
 flutter doctor --android-licenses
@@ -68,7 +76,7 @@ flutter doctor --android-licenses
 
 Type `y` to accept all licenses.
 
-## Step 3: Verify Setup
+## Step 4: Verify Setup
 
 Run Flutter doctor again:
 
@@ -82,7 +90,7 @@ You should see checkmarks for:
 -  VS Code
 -  Connected device (optional for now)
 
-## Step 4: Configure Firebase for Flutter
+## Step 5: Configure Firebase for Flutter
 
 ### Install FlutterFire CLI
 
@@ -92,6 +100,7 @@ dart pub global activate flutterfire_cli
 
 Add Dart global packages to PATH:
 - Add `%LOCALAPPDATA%\Pub\Cache\bin` to your PATH environment variable
+- Restart terminal after adding to PATH
 
 ### Configure Firebase Project
 
@@ -108,7 +117,7 @@ This will:
 3. Generate `firebase_options.dart` with your configuration
 4. Update platform-specific files (Android/iOS)
 
-## Step 5: Initialize Flutter Project
+## Step 6: Initialize Flutter Project
 
 From the repository root:
 
@@ -119,7 +128,7 @@ flutter create . --org com.remotealarm
 
 This creates the Flutter project structure while preserving existing files.
 
-## Step 6: Install Dependencies
+## Step 7: Install Dependencies
 
 ```powershell
 flutter pub get
@@ -129,8 +138,9 @@ flutter pub get
 
 ### "flutter" not recognized
 
-- Restart PowerShell/Terminal after adding to PATH
-- Verify PATH includes Flutter bin directory
+- Restart PowerShell/Terminal after installation
+- Restart VS Code
+- Verify Flutter was added to PATH during installation
 - Try: `where.exe flutter`
 
 ### Android licenses not accepted
@@ -159,6 +169,11 @@ flutter emulators
 # Launch emulator
 flutter emulators --launch <emulator_id>
 ```
+
+### Download seems stuck
+
+- Click Cancel in VS Code
+- Try again: `Ctrl+Shift+P`  `Flutter: New Project`  `Download SDK`
 
 ## Next Steps
 
