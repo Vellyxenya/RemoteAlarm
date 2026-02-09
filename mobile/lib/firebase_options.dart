@@ -31,19 +31,21 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'YOUR-API-KEY',
-    appId: 'YOUR-APP-ID',
-    messagingSenderId: 'YOUR-SENDER-ID',
+    apiKey: 'AIzaSyBHx1bhoKsGkr9MEoO-LrKGx1gfcKuhDHU',
+    appId: '1:503244947942:android:586db84b603383816a1627',
+    messagingSenderId: '503244947942',
     projectId: 'remotealarm-be4d7',
-    storageBucket: 'remotealarm-be4d7.appspot.com',
+    storageBucket: 'remotealarm-be4d7.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'YOUR-API-KEY',
-    appId: 'YOUR-APP-ID',
-    messagingSenderId: 'YOUR-SENDER-ID',
+    apiKey: 'AIzaSyDTL2V3bKRI0Qfrl1m8kZl-K182yZWCvLU',
+    appId: '1:503244947942:ios:1c2586688fd184fa6a1627',
+    messagingSenderId: '503244947942',
     projectId: 'remotealarm-be4d7',
-    storageBucket: 'remotealarm-be4d7.appspot.com',
-    iosBundleId: 'com.remotealarm.remotealarm',
+    storageBucket: 'remotealarm-be4d7.firebasestorage.app',
+    iosClientId: '503244947942-ogqqqh48losan3th9c3ua7vp8vm3g00f.apps.googleusercontent.com',
+    iosBundleId: 'com.remotealarm',
   );
+
 }
