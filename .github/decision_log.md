@@ -10,6 +10,13 @@
 
 ## Entries (newest first)
 - Date: 2026-02-09
+  Time (UTC+8): 16:30
+  Decision: Complete Phase 1 - Flutter mobile app with audio recording and Firebase Storage upload.
+  Rationale: Built fully functional Flutter app with AudioService for WAV recording (16kHz) and StorageService for Firebase uploads with anonymous auth. App tested successfully on Android emulator - records audio, uploads to Firebase Storage with UUID filenames. Updated dependencies to fix build compatibility (Firebase packages upgraded, record_linux override added). All tests passing.
+  Alternatives: Could have used different audio formats (AAC, MP3) but WAV is simpler and compatible with ESP32 playback.
+  Impact: Mobile app complete and ready for integration with Cloud Functions. Users can record and upload voice notes. Next: Phase 2 Cloud Functions to process uploads and trigger MQTT notifications.
+
+- Date: 2026-02-09
   Time (UTC+8): 14:00
   Decision: Complete Phase 0 - Firebase backend setup with Storage security rules.
   Rationale: Configured Firebase project with Storage, Authentication (Anonymous), and deployed security rules. Rules ensure only authenticated users can upload to /audio/* and prevent direct downloads (signed URLs only via Cloud Functions). This establishes secure foundation for mobile app uploads.
@@ -25,77 +32,77 @@
 
 - Date: 2026-02-09
   Time (UTC+8): 00:00
-	Decision: Standardize decision log timestamps to UTC+8.
-	Rationale: Align timestamps with preferred timezone (Taipei).
-	Alternatives: Keep times without timezone.
-	Impact: Clearer time context for future entries.
+        Decision: Standardize decision log timestamps to UTC+8.
+        Rationale: Align timestamps with preferred timezone (Taipei).
+        Alternatives: Keep times without timezone.
+        Impact: Clearer time context for future entries.
 
 - Date: 2026-02-09
-	Time (UTC+8): 00:00
-	Decision: Expand .gitignore to cover Flutter, Firebase Functions, ESP-IDF, and common tooling.
-	Rationale: Prevent build artifacts and secrets from being committed.
-	Alternatives: Keep minimal .gitignore.
-	Impact: Cleaner repo and safer defaults.
+        Time (UTC+8): 00:00
+        Decision: Expand .gitignore to cover Flutter, Firebase Functions, ESP-IDF, and common tooling.
+        Rationale: Prevent build artifacts and secrets from being committed.
+        Alternatives: Keep minimal .gitignore.
+        Impact: Cleaner repo and safer defaults.
 
 - Date: 2026-02-09
-	Time (UTC+8): 00:00
-	Decision: Use CODEOWNERS as the reviewer source in workflow instructions.
-	Rationale: Avoid hardcoding a specific username in instructions.
-	Alternatives: Keep explicit @mention in instructions.
-	Impact: Reviewer assignment stays centralized.
+        Time (UTC+8): 00:00
+        Decision: Use CODEOWNERS as the reviewer source in workflow instructions.
+        Rationale: Avoid hardcoding a specific username in instructions.
+        Alternatives: Keep explicit @mention in instructions.
+        Impact: Reviewer assignment stays centralized.
 
 - Date: 2026-02-09
-	Time (UTC+8): 00:00
-	Decision: Standardize AI branch/PR workflow for each project step.
-	Rationale: Ensure traceability and consistent review by @Vellyxenya.
-	Alternatives: Manual branching and reviewer assignment.
-	Impact: Clearer history and reliable review flow.
+        Time (UTC+8): 00:00
+        Decision: Standardize AI branch/PR workflow for each project step.
+        Rationale: Ensure traceability and consistent review by @Vellyxenya.
+        Alternatives: Manual branching and reviewer assignment.
+        Impact: Clearer history and reliable review flow.
 
 - Date: 2026-02-09
-	Time (UTC+8): 00:00
-	Decision: Require updating tasks.md on completion in workflow instructions.
-	Rationale: Ensure progress tracking is consistently maintained.
-	Alternatives: Rely on ad-hoc updates.
-	Impact: Tasks board stays current after each change.
+        Time (UTC+8): 00:00
+        Decision: Require updating tasks.md on completion in workflow instructions.
+        Rationale: Ensure progress tracking is consistently maintained.
+        Alternatives: Rely on ad-hoc updates.
+        Impact: Tasks board stays current after each change.
 
 - Date: 2026-02-09
-	Time (UTC+8): 00:00
-	Decision: Merge workflow guidance into project instructions and remove workflow.md.
-	Rationale: Ensure workflow rules always apply via custom instructions.
-	Alternatives: Keep workflow as standalone documentation only.
-	Impact: Single source of truth for workflow guidance.
+        Time (UTC+8): 00:00
+        Decision: Merge workflow guidance into project instructions and remove workflow.md.
+        Rationale: Ensure workflow rules always apply via custom instructions.
+        Alternatives: Keep workflow as standalone documentation only.
+        Impact: Single source of truth for workflow guidance.
 
 - Date: 2026-02-09
-	Time (UTC+8): 00:00
-	Decision: Update workflow artifacts list to match current .github structure.
-	Rationale: Keep workflow documentation aligned with actual files.
-	Alternatives: Leave outdated artifact list.
-	Impact: Reduces confusion and improves discoverability.
+        Time (UTC+8): 00:00
+        Decision: Update workflow artifacts list to match current .github structure.
+        Rationale: Keep workflow documentation aligned with actual files.
+        Alternatives: Leave outdated artifact list.
+        Impact: Reduces confusion and improves discoverability.
 
 - Date: 2026-02-09
-	Time (UTC+8): 00:00
-	Decision: Move full project plan into Backlog section.
-	Rationale: Treat the plan as the initial backlog for execution tracking.
-	Alternatives: Keep the plan as a separate section outside progress tracking.
-	Impact: All tasks now live under Backlog for easy status updates.
+        Time (UTC+8): 00:00
+        Decision: Move full project plan into Backlog section.
+        Rationale: Treat the plan as the initial backlog for execution tracking.
+        Alternatives: Keep the plan as a separate section outside progress tracking.
+        Impact: All tasks now live under Backlog for easy status updates.
 
 - Date: 2026-02-09
-	Time (UTC+8): 00:00
-	Decision: Reintroduce progress board sections in tasks.
-	Rationale: Track backlog, in-progress, and completed work alongside the plan.
-	Alternatives: Keep only the phased plan without status tracking.
-	Impact: Enables ongoing progress management.
+        Time (UTC+8): 00:00
+        Decision: Reintroduce progress board sections in tasks.
+        Rationale: Track backlog, in-progress, and completed work alongside the plan.
+        Alternatives: Keep only the phased plan without status tracking.
+        Impact: Enables ongoing progress management.
 
 - Date: 2026-02-09
-	Time (UTC+8): 00:00
-	Decision: Populate tasks with full project plan for audio notification system.
-	Rationale: Establishes a shared, phase-based roadmap for implementation.
-	Alternatives: Keep tasks as a minimal backlog only.
-	Impact: Clear execution steps across Flutter, Firebase, MQTT, and ESP32.
+        Time (UTC+8): 00:00
+        Decision: Populate tasks with full project plan for audio notification system.
+        Rationale: Establishes a shared, phase-based roadmap for implementation.
+        Alternatives: Keep tasks as a minimal backlog only.
+        Impact: Clear execution steps across Flutter, Firebase, MQTT, and ESP32.
 
 - Date: 2026-02-09
-	Time (UTC+8): 00:00
-	Decision: Store AI guidance in .github with prompt files under .github/prompts.
-	Rationale: Aligns with VS Code custom instructions and prompt file conventions.
-	Alternatives: Keep root-level guidance files only.
-	Impact: Copilot can auto-discover instructions; prompt files are opt-in.
+        Time (UTC+8): 00:00
+        Decision: Store AI guidance in .github with prompt files under .github/prompts.
+        Rationale: Aligns with VS Code custom instructions and prompt file conventions.
+        Alternatives: Keep root-level guidance files only.
+        Impact: Copilot can auto-discover instructions; prompt files are opt-in.
