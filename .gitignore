@@ -161,3 +161,10 @@ pip-wheel-metadata/
 # Misc
 *.bak
 *.orig
+
+# Firebase
+.firebaserc
+firebase-debug.log
+firebase-debug.*.log
+.firebase/
+
