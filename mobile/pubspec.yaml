@@ -1,0 +1,37 @@
+name: remotealarm
+description: RemoteAlarm mobile app for recording and uploading voice messages
+
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # Firebase
+  firebase_core: ^2.24.2
+  firebase_auth: ^4.16.0
+  firebase_storage: ^11.6.0
+  
+  # Audio recording
+  record: ^5.0.4
+  path_provider: ^2.1.1
+  
+  # UI
+  cupertino_icons: ^1.0.6
+  
+  # Utilities
+  uuid: ^4.3.3
+  permission_handler: ^11.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.1
+
+flutter:
+  uses-material-design: true
