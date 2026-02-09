@@ -153,3 +153,7 @@
 ### Done
 - Consolidate workflow into project.instructions.md
 - Update .gitignore for project stack
+- Add AI branch/PR workflow instruction
+- Add CODEOWNERS and reference it in workflow
+- Add decision log time + ordering rule
+- Set decision log timezone to UTC+8

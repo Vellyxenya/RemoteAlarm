@@ -12,6 +12,7 @@ Define how the AI should operate in this repo.
 - Keep responses short and impersonal.
 - Always update .github/tasks.md when work starts/finishes.
 - Log key decisions in .github/decision_log.md.
+- Decision log entries must include date and time, and be ordered newest-first.
 
 ## Change Workflow
 1. Review context in .github/context.md.
@@ -27,6 +28,7 @@ Define how the AI should operate in this repo.
 ### Execution
 - Read → Plan → Change → Validate → Document.
 - On completion, update .github/tasks.md to reflect progress.
+- When moving to the next project step, create a new branch using standard conventions prefixed with ai/ (for example: ai/feature/<short-description>), implement the change, push the branch, open a PR, and add the CODEOWNERS from CODEOWNERS as reviewer.
 
 ### Artifacts
 - .github/copilot-instructions.md
