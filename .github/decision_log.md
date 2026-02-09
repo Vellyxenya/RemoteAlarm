@@ -10,6 +10,13 @@
 
 ## Entries (newest first)
 - Date: 2026-02-09
+  Time (UTC+8): 12:00
+  Decision: Bootstrap project with organized folder structure for mobile, functions, firmware, and docs.
+  Rationale: Establish clear separation of concerns from the start; each component (Flutter app, Cloud Functions, ESP32 firmware) lives in its own directory with dedicated READMEs. Documentation directory provides centralized architecture, setup, security, and API references.
+  Alternatives: Keep flat structure or wait until components are implemented to create folders.
+  Impact: Clear project organization makes onboarding easier, reduces confusion, and follows best practices for multi-component projects. Sets foundation for parallel development of each component.
+
+- Date: 2026-02-09
   Time (UTC+8): 00:00
 	Decision: Standardize decision log timestamps to UTC+8.
 	Rationale: Align timestamps with preferred timezone (Taipei).

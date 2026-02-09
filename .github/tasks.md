@@ -2,6 +2,16 @@
 
 ## Progress Board
 
+### Completed
+- **Bootstrap Project** (2026-02-09)
+  - ✅ Created folder structure for mobile, functions, firmware, and docs
+  - ✅ Added README files for each component
+  - ✅ Created comprehensive documentation
+  - ✅ Updated root README with project overview
+
+### In Progress
+- None
+
 ### Backlog
 - Phase 0 — Setup
 	- Task 0.1: Create Firebase Project
@@ -147,13 +157,3 @@
 	- OTA firmware updates + secure provisioning
 	- Replace HiveMQ with AWS IoT Core for certificate-based auth
 
-### In Progress
-- 
-
-### Done
-- Consolidate workflow into project.instructions.md
-- Update .gitignore for project stack
-- Add AI branch/PR workflow instruction
-- Add CODEOWNERS and reference it in workflow
-- Add decision log time + ordering rule
-- Set decision log timezone to UTC+8
