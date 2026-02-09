@@ -10,6 +10,13 @@
 
 ## Entries (newest first)
 - Date: 2026-02-09
+  Time (UTC+8): 14:00
+  Decision: Complete Phase 0 - Firebase backend setup with Storage security rules.
+  Rationale: Configured Firebase project with Storage, Authentication (Anonymous), and deployed security rules. Rules ensure only authenticated users can upload to /audio/* and prevent direct downloads (signed URLs only via Cloud Functions). This establishes secure foundation for mobile app uploads.
+  Alternatives: Could have used Firebase Authentication with Google Sign-In, but Anonymous auth is faster for MVP and can be upgraded later.
+  Impact: Backend infrastructure ready for Phase 1 (Flutter app). Storage security enforced at Firebase level. Setup documentation created for reproducibility.
+
+- Date: 2026-02-09
   Time (UTC+8): 12:00
   Decision: Bootstrap project with organized folder structure for mobile, functions, firmware, and docs.
   Rationale: Establish clear separation of concerns from the start; each component (Flutter app, Cloud Functions, ESP32 firmware) lives in its own directory with dedicated READMEs. Documentation directory provides centralized architecture, setup, security, and API references.
