@@ -1,4 +1,4 @@
-# tasks.md
+﻿# tasks.md
 
 ## Progress Board
 
@@ -43,7 +43,7 @@
     - Migrated to firebase-functions/params for configuration
     - Separate HiveMQ users: firebase-function (publish), esp32-device1 (subscribe)
     - Unique client IDs per function invocation to prevent conflicts
-    - End-to-end pipeline verified: Flutter → Storage → Function → MQTT
+    - End-to-end pipeline verified: Flutter â†’ Storage â†’ Function â†’ MQTT
 
 - **Phase 3 - MQTT Broker Setup (HiveMQ)** (2026-02-10)
   -  Task 3.1: Create HiveMQ Cloud Instance
@@ -57,6 +57,45 @@
     - Tested and verified message delivery
 
 ### In Progress
+- Phase 4 - ESP32 Firmware (Subscribe + Download + Play)
+  - Task 4.1: Choose Board + Framework
+    - Target board: Waveshare ESP32-S3 AI Smart RGB Speaker Dev Board
+    - Use: ESP-IDF + ESP-ADF
+  - Task 4.2: Connect to Wi-Fi
+    - WPA2 network credentials stored securely
+  - Task 4.3: Connect to MQTT Broker via TLS
+    - Subscribe: home/audio/device123
+    - Use: MQTTS (TLS)
+    - Username/password stored in encrypted NVS if possible
+  - Task 4.4: Parse MQTT Payload
+    - Extract: signed audio URL, timestamp, optional signature
+  - Task 4.5: Download Audio via HTTPS
+    - HTTPS GET signed URL
+    - Stream directly (no full file buffering)
+  - Task 4.6: Play Audio with ESP-ADF
+    - Playback pipeline: HTTP stream reader  WAV decoder  I2S output
+    - Goal: Play message immediately after notification
+  - Task 4.7: Prevent Replay / Spam
+    - Ignore duplicate timestamps
+    - Only accept messages with valid signature (optional)
+
+- Phase 5 - MVP Testing Checklist
+  - End-to-End Test
+    - Record audio in Flutter app
+    - Upload succeeds
+    - Cloud Function triggers
+    - MQTT message published
+    - ESP32 receives notification
+    - ESP32 downloads audio
+    - Speaker plays message
+
+- Future Improvements
+  - Multiple devices (topic per device)
+  - Message queue + retry
+  - Local caching on SD card
+  - Add Text-to-Speech (TTS) instead of recorded audio
+  - OTA firmware updates + secure provisioning
+  - Replace HiveMQ with AWS IoT Core for certificate-based auth
 
 ### Backlog
 - Phase 2 - Cloud Function (Trigger + MQTT Publish)
@@ -111,42 +150,3 @@
     - No wildcard access.
     - Goal: Random clients cannot listen in.
 
-- Phase 4 - ESP32 Firmware (Subscribe + Download + Play)
-  - Task 4.1: Choose Board + Framework
-    - Target board: Waveshare ESP32-S3 AI Smart RGB Speaker Dev Board
-    - Use: ESP-IDF + ESP-ADF
-  - Task 4.2: Connect to Wi-Fi
-    - WPA2 network credentials stored securely
-  - Task 4.3: Connect to MQTT Broker via TLS
-    - Subscribe: home/audio/device123
-    - Use: MQTTS (TLS)
-    - Username/password stored in encrypted NVS if possible
-  - Task 4.4: Parse MQTT Payload
-    - Extract: signed audio URL, timestamp, optional signature
-  - Task 4.5: Download Audio via HTTPS
-    - HTTPS GET signed URL
-    - Stream directly (no full file buffering)
-  - Task 4.6: Play Audio with ESP-ADF
-    - Playback pipeline: HTTP stream reader  WAV decoder  I2S output
-    - Goal: Play message immediately after notification
-  - Task 4.7: Prevent Replay / Spam
-    - Ignore duplicate timestamps
-    - Only accept messages with valid signature (optional)
-
-- Phase 5 - MVP Testing Checklist
-  - End-to-End Test
-    - Record audio in Flutter app
-    - Upload succeeds
-    - Cloud Function triggers
-    - MQTT message published
-    - ESP32 receives notification
-    - ESP32 downloads audio
-    - Speaker plays message
-
-- Future Improvements
-  - Multiple devices (topic per device)
-  - Message queue + retry
-  - Local caching on SD card
-  - Add Text-to-Speech (TTS) instead of recorded audio
-  - OTA firmware updates + secure provisioning
-  - Replace HiveMQ with AWS IoT Core for certificate-based auth
