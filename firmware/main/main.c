@@ -28,6 +28,7 @@ static const char *TAG = "REMOTE_ALARM";
 #define I2S_BCK_IO     (GPIO_NUM_17)
 #define I2S_WS_IO      (GPIO_NUM_18)
 #define I2S_DO_IO      (GPIO_NUM_16)
+#define AUDIO_BUFFER_SIZE 4096
 
 static EventGroupHandle_t wifi_event_group;
 static i2s_chan_handle_t tx_handle = NULL;
@@ -163,12 +164,12 @@ static void play_audio(const char *url) {
     ESP_ERROR_CHECK(i2s_channel_reconfig_std_slot(tx_handle, &slot_cfg));
 
     // Stream audio data to I2S
-    char *buffer = malloc(512);
+    char *buffer = malloc(AUDIO_BUFFER_SIZE);
     size_t bytes_written;
     int total_read = 44;
 
     while (1) {
-        read_len = esp_http_client_read(client, buffer, 512);
+        read_len = esp_http_client_read(client, buffer, AUDIO_BUFFER_SIZE);
         if (read_len <= 0) break;
         
         i2s_channel_write(tx_handle, buffer, read_len, &bytes_written, portMAX_DELAY);
@@ -219,6 +220,7 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
 static void mqtt_init(void) {
     esp_mqtt_client_config_t mqtt_cfg = {
         .broker.address.uri = MQTT_BROKER,
+        .broker.verification.crt_bundle_attach = esp_crt_bundle_attach,
         .credentials.username = MQTT_USER,
         .credentials.authentication.password = MQTT_PASS,
     };
@@ -226,7 +228,7 @@ static void mqtt_init(void) {
     esp_mqtt_client_handle_t client = esp_mqtt_client_init(&mqtt_cfg);
     esp_mqtt_client_register_event(client, ESP_EVENT_ANY_ID, mqtt_event_handler, NULL);
     esp_mqtt_client_start(client);
-    ESP_LOGI(TAG, "MQTT client started");
+    ESP_LOGI(TAG, "MQTT client started on port 8883");
 }
 
 void app_main(void) {
