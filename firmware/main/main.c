@@ -1,4 +1,6 @@
 ﻿#include <string.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 #include "esp_log.h"
 #include "nvs_flash.h"
 #include "esp_event.h"
@@ -16,7 +18,6 @@
 #include "http_stream.h"
 #include "i2s_stream.h"
 #include "wav_decoder.h"
-#include "board.h"
 
 static const char *TAG = "REMOTE_ALARM";
 
@@ -71,7 +72,7 @@ static void play_audio(const char *url) {
 
         if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT && msg.source == (void *) i2s_stream_writer
             && msg.cmd == AUDIO_ELEMENT_MSG_CMD_FINISH) {
-            ESP_LOGI(TAG, "Playback finished");
+            ESP_LOGI(TAG, "Playback finished!");
             break;
         }
     }

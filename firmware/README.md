@@ -30,7 +30,7 @@ This project uses the ESP-IDF Kconfig system to manage credentials. **Never hard
    ```
 2. Open the configuration menu:
    ```bash
-   idf.py menuconfig
+   idf.py menuconfig # See [docs/esp-setup.md](../docs/esp-setup.md) if idf.py is not found
    ```
 3. Navigate to the **"Remote Alarm Configuration"** menu.
 4. Enter your specific details:
@@ -44,7 +44,7 @@ This project uses the ESP-IDF Kconfig system to manage credentials. **Never hard
 1. Ensure your ESP-IDF and ESP-ADF environment is sourced (e.g., `. $HOME/esp/esp-idf/export.sh`).
 2. Build the project:
    ```bash
-   idf.py build
+   idf.py build # See [docs/esp-setup.md](../docs/esp-setup.md) if idf.py is not found
    ```
 3. Flash to your device:
    ```bash

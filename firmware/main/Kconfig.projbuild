@@ -24,7 +24,7 @@
 
     config MQTT_PASSWORD
         string "MQTT Password"
-        default "WakeupCeleste1"
+        default "DEFAULT_PASSWORD"
 
     config MQTT_TOPIC
         string "MQTT Topic"
