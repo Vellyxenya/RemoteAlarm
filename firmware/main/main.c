@@ -8,6 +8,7 @@
 #include "esp_event.h"
 #include "nvs_flash.h"
 #include "esp_netif.h"
+#include "esp_crt_bundle.h"
 #include "mqtt_client.h"
 #include "esp_http_client.h"
 #include "esp_tls.h"
@@ -121,8 +122,10 @@ static void play_audio(const char *url) {
     esp_http_client_config_t config = {
         .url = url,
         .event_handler = http_event_handler,
-        .buffer_size = 4096,
+        .buffer_size = 8192,
+        .buffer_size_tx = 4096,
         .timeout_ms = 10000,
+        .crt_bundle_attach = esp_crt_bundle_attach,
     };
     esp_http_client_handle_t client = esp_http_client_init(&config);
 
@@ -153,15 +156,21 @@ static void play_audio(const char *url) {
 
     ESP_LOGI(TAG, "WAV: %lu Hz, %u channels, %u bits", (unsigned long)sample_rate, (unsigned)num_channels, (unsigned)bits_per_sample);
 
+    // Disable I2S before reconfiguration
+    ESP_ERROR_CHECK(i2s_channel_disable(tx_handle));
+
     // Reconfigure I2S with actual WAV parameters
     i2s_std_clk_config_t clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG(sample_rate);
     ESP_ERROR_CHECK(i2s_channel_reconfig_std_clock(tx_handle, &clk_cfg));
 
     i2s_data_bit_width_t bit_width = (bits_per_sample == 16) ? I2S_DATA_BIT_WIDTH_16BIT : I2S_DATA_BIT_WIDTH_32BIT;
     i2s_slot_mode_t slot_mode = (num_channels == 1) ? I2S_SLOT_MODE_MONO : I2S_SLOT_MODE_STEREO;
-    
+
     i2s_std_slot_config_t slot_cfg = I2S_STD_PHILIPS_SLOT_DEFAULT_CONFIG(bit_width, slot_mode);
     ESP_ERROR_CHECK(i2s_channel_reconfig_std_slot(tx_handle, &slot_cfg));
+
+    // Re-enable I2S after reconfiguration
+    ESP_ERROR_CHECK(i2s_channel_enable(tx_handle));
 
     // Stream audio data to I2S
     char *buffer = malloc(AUDIO_BUFFER_SIZE);
