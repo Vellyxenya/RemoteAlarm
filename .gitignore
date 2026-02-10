@@ -76,6 +76,7 @@ pnpm-debug.log*
 # Environment files
 .env
 .env.*
+!.env.example
 
 # Node / Firebase Functions
 node_modules/

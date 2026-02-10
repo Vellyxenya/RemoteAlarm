@@ -35,13 +35,28 @@
     - UUID-based filenames (audio/<uuid>.wav)
     - Tested successfully on Android emulator
 
+- **Phase 2 - Cloud Function (Trigger + MQTT Publish)** (2026-02-10)
+  -  Task 2.1-2.4: Implement Cloud Function with MQTT Publishing
+    - Created onAudioUpload function triggered by Storage onFinalize
+    - Generates signed URLs (10 min expiration) for secure downloads
+    - Publishes MQTT messages to HiveMQ Cloud broker via TLS
+    - Migrated to firebase-functions/params for configuration
+    - Separate HiveMQ users: firebase-function (publish), esp32-device1 (subscribe)
+    - Unique client IDs per function invocation to prevent conflicts
+    - End-to-end pipeline verified: Flutter → Storage → Function → MQTT
+
+- **Phase 3 - MQTT Broker Setup (HiveMQ)** (2026-02-10)
+  -  Task 3.1: Create HiveMQ Cloud Instance
+    - Free tier HiveMQ Cloud cluster created
+    - TLS/MQTTS enabled on port 8883
+  -  Task 3.2: Create Device Credentials
+    - Created firebase-function user for Cloud Function publishing
+    - Created esp32-device1 user for device subscription and monitoring
+  -  Task 3.3: Topic ACL Restrictions
+    - Configured access controls for topic home/audio/device1
+    - Tested and verified message delivery
+
 ### In Progress
-- **Phase 2 - Cloud Function (Trigger + MQTT Publish)**
-  - Task 2.1: Initialize Firebase Functions
-  - Task 2.2: Trigger on Audio Upload
-  - Task 2.3: Generate Signed Download URL
-  - Task 2.4: Publish MQTT Message
-  - Task 2.5 (Optional): Add HMAC Signature
 
 ### Backlog
 - Phase 2 - Cloud Function (Trigger + MQTT Publish)

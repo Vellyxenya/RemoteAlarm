@@ -9,100 +9,104 @@
 - Impact:
 
 ## Entries (newest first)
+- Date: 2026-02-10
+  Time (UTC+8): 11:30
+  Decision: Rotated Firebase API keys following a security leak detection.
+  Rationale: GitHub/Google detected a publicly accessible API key in firebase_options.dart. Although Firebase keys are meant to be in the app, it is best practice to rotate them once flagged and apply strict application restrictions.
+  Alternatives: None (security best practice).
+  Impact: New keys committed to repo. Old keys must be deleted in Google Cloud Console. App requires redeploy with new keys. Security state improved with restricted key usage.
+
+- Date: 2026-02-10
+  Time (UTC+8): 11:15
+  Decision: Complete Phase 3 - MQTT Broker Setup (HiveMQ).
+  Rationale: Set up HiveMQ Cloud free tier cluster with MQTTS on port 8883. Created two separate users for security: firebase-function (publish only) and esp32-device1 (subscribe for device and monitoring). Configured topic restrictions for home/audio/device1. Tested message delivery successfully through web client.
+  Alternatives: 1) Use single user for both publish and subscribe (causes connection conflicts). 2) Self-host Mosquitto broker (more complex, requires server management). 3) AWS IoT Core (certificate-based auth, overkill for MVP).
+  Impact: Secure MQTT broker operational. Separate credentials prevent connection conflicts between publisher and subscribers. Free tier sufficient for MVP. Ready for ESP32 firmware to connect and receive notifications.
+
+- Date: 2026-02-10
+  Time (UTC+8): 11:00
+  Decision: Complete Phase 2 - Cloud Function (Trigger + MQTT Publish).
+  Rationale: Implemented Cloud Function that triggers on Firebase Storage uploads, generates signed URLs, and publishes to HiveMQ broker via MQTTS. Migrated to firebase-functions/params package instead of deprecated functions.config(). Fixed MQTT timeout issues by using QoS 0, unique client IDs, and improved timeout handling. Created separate HiveMQ users (firebase-function for publishing, esp32-device1 for subscribing) to prevent connection conflicts. End-to-end pipeline verified working: Flutter app -> Firebase Storage -> Cloud Function -> HiveMQ MQTT broker.
+  Alternatives: 1) Use QoS 1 for guaranteed delivery (slower, timed out). 2) Use same MQTT credentials for function and monitoring (causes disconnects). 3) Keep deprecated functions.config() (would break in March 2026).
+  Impact: Complete audio notification pipeline from mobile to MQTT. ESP32 firmware can now subscribe to receive audio URLs. Signed URLs provide secure time-limited access to audio files without exposing storage directly. Ready for Phase 4 ESP32 implementation.
+
+- Date: 2026-02-10
+  Time (UTC+8): 14:45
+  Decision: Migrate Cloud Functions from deprecated functions.config() to params package.
+  Rationale: Firebase deprecated functions.config() and Runtime Config service, scheduled for shutdown in March 2026. Migration required to prevent deployment failures. Using firebase-functions/params with defineString() provides type-safe, documented environment parameters with defaults.
+  Alternatives: 1) Enable legacy commands temporarily. 2) Use environment variables directly via process.env.
+  Impact: Functions code updated to use params API. Deployment command changed to include --set-params. Local development uses .env file. Documentation updated.
+
 - Date: 2026-02-09
   Time (UTC+8): 16:30
   Decision: Complete Phase 1 - Flutter mobile app with audio recording and Firebase Storage upload.
-  Rationale: Built fully functional Flutter app with AudioService for WAV recording (16kHz) and StorageService for Firebase uploads with anonymous auth. App tested successfully on Android emulator - records audio, uploads to Firebase Storage with UUID filenames. Updated dependencies to fix build compatibility (Firebase packages upgraded, record_linux override added). All tests passing.
-  Alternatives: Could have used different audio formats (AAC, MP3) but WAV is simpler and compatible with ESP32 playback.
-  Impact: Mobile app complete and ready for integration with Cloud Functions. Users can record and upload voice notes. Next: Phase 2 Cloud Functions to process uploads and trigger MQTT notifications.
+  Rationale: Built fully functional Flutter app with AudioService for WAV recording (16kHz) and StorageService for Firebase uploads with anonymous auth. App tested successfully on Android emulator.
+  Alternatives: Could have used different audio formats (AAC, MP3).
+  Impact: Mobile app complete and ready for integration with Cloud Functions.
 
 - Date: 2026-02-09
   Time (UTC+8): 14:00
   Decision: Complete Phase 0 - Firebase backend setup with Storage security rules.
-  Rationale: Configured Firebase project with Storage, Authentication (Anonymous), and deployed security rules. Rules ensure only authenticated users can upload to /audio/* and prevent direct downloads (signed URLs only via Cloud Functions). This establishes secure foundation for mobile app uploads.
-  Alternatives: Could have used Firebase Authentication with Google Sign-In, but Anonymous auth is faster for MVP and can be upgraded later.
-  Impact: Backend infrastructure ready for Phase 1 (Flutter app). Storage security enforced at Firebase level. Setup documentation created for reproducibility.
+  Rationale: Configured Firebase project with Storage, Authentication (Anonymous), and deployed security rules.
+  Impact: Backend infrastructure ready for Phase 1 (Flutter app).
 
 - Date: 2026-02-09
   Time (UTC+8): 12:00
-  Decision: Bootstrap project with organized folder structure for mobile, functions, firmware, and docs.
-  Rationale: Establish clear separation of concerns from the start; each component (Flutter app, Cloud Functions, ESP32 firmware) lives in its own directory with dedicated READMEs. Documentation directory provides centralized architecture, setup, security, and API references.
-  Alternatives: Keep flat structure or wait until components are implemented to create folders.
-  Impact: Clear project organization makes onboarding easier, reduces confusion, and follows best practices for multi-component projects. Sets foundation for parallel development of each component.
+  Decision: Bootstrap project with organized folder structure.
+  Rationale: Establish clear separation of concerns (mobile, functions, firmware, docs).
+  Impact: Clear project organization makes onboarding easier.
 
 - Date: 2026-02-09
   Time (UTC+8): 00:00
         Decision: Standardize decision log timestamps to UTC+8.
         Rationale: Align timestamps with preferred timezone (Taipei).
-        Alternatives: Keep times without timezone.
-        Impact: Clearer time context for future entries.
 
 - Date: 2026-02-09
         Time (UTC+8): 00:00
-        Decision: Expand .gitignore to cover Flutter, Firebase Functions, ESP-IDF, and common tooling.
-        Rationale: Prevent build artifacts and secrets from being committed.
-        Alternatives: Keep minimal .gitignore.
-        Impact: Cleaner repo and safer defaults.
+        Decision: Expand .gitignore for Flutter and Firebase.
+        Rationale: Prevent build artifacts from being committed.
 
 - Date: 2026-02-09
         Time (UTC+8): 00:00
-        Decision: Use CODEOWNERS as the reviewer source in workflow instructions.
-        Rationale: Avoid hardcoding a specific username in instructions.
-        Alternatives: Keep explicit @mention in instructions.
-        Impact: Reviewer assignment stays centralized.
+        Decision: Use CODEOWNERS as the reviewer source.
+        Rationale: Avoid hardcoding usernames in instructions.
 
 - Date: 2026-02-09
         Time (UTC+8): 00:00
-        Decision: Standardize AI branch/PR workflow for each project step.
-        Rationale: Ensure traceability and consistent review by @Vellyxenya.
-        Alternatives: Manual branching and reviewer assignment.
-        Impact: Clearer history and reliable review flow.
+        Decision: Standardize AI branch/PR workflow.
+        Rationale: Ensure traceability and consistent review.
 
 - Date: 2026-02-09
         Time (UTC+8): 00:00
-        Decision: Require updating tasks.md on completion in workflow instructions.
-        Rationale: Ensure progress tracking is consistently maintained.
-        Alternatives: Rely on ad-hoc updates.
-        Impact: Tasks board stays current after each change.
+        Decision: Require updating tasks.md on completion.
+        Rationale: Ensure progress tracking is maintained.
 
 - Date: 2026-02-09
         Time (UTC+8): 00:00
-        Decision: Merge workflow guidance into project instructions and remove workflow.md.
-        Rationale: Ensure workflow rules always apply via custom instructions.
-        Alternatives: Keep workflow as standalone documentation only.
-        Impact: Single source of truth for workflow guidance.
+        Decision: Merge workflow guidance into project instructions.
+        Rationale: Ensure workflow rules always apply.
 
 - Date: 2026-02-09
         Time (UTC+8): 00:00
-        Decision: Update workflow artifacts list to match current .github structure.
-        Rationale: Keep workflow documentation aligned with actual files.
-        Alternatives: Leave outdated artifact list.
-        Impact: Reduces confusion and improves discoverability.
+        Decision: Update workflow artifacts list.
+        Rationale: Keep documentation aligned with actual files.
 
 - Date: 2026-02-09
         Time (UTC+8): 00:00
         Decision: Move full project plan into Backlog section.
-        Rationale: Treat the plan as the initial backlog for execution tracking.
-        Alternatives: Keep the plan as a separate section outside progress tracking.
-        Impact: All tasks now live under Backlog for easy status updates.
+        Rationale: Treat plan as initial backlog.
 
 - Date: 2026-02-09
         Time (UTC+8): 00:00
         Decision: Reintroduce progress board sections in tasks.
-        Rationale: Track backlog, in-progress, and completed work alongside the plan.
-        Alternatives: Keep only the phased plan without status tracking.
-        Impact: Enables ongoing progress management.
+        Rationale: Track backlog, in-progress, and completed work.
 
 - Date: 2026-02-09
         Time (UTC+8): 00:00
-        Decision: Populate tasks with full project plan for audio notification system.
-        Rationale: Establishes a shared, phase-based roadmap for implementation.
-        Alternatives: Keep tasks as a minimal backlog only.
-        Impact: Clear execution steps across Flutter, Firebase, MQTT, and ESP32.
+        Decision: Populate tasks with full project plan.
+        Rationale: Establishes a shared roadmap.
 
 - Date: 2026-02-09
         Time (UTC+8): 00:00
-        Decision: Store AI guidance in .github with prompt files under .github/prompts.
-        Rationale: Aligns with VS Code custom instructions and prompt file conventions.
-        Alternatives: Keep root-level guidance files only.
-        Impact: Copilot can auto-discover instructions; prompt files are opt-in.
+        Decision: Store AI guidance in .github.
+        Rationale: Aligns with VS Code and prompt file conventions.

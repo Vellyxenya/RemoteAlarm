@@ -1,8 +1,30 @@
 const {onObjectFinalized} = require("firebase-functions/v2/storage");
 const {setGlobalOptions} = require("firebase-functions/v2");
+const {defineString} = require("firebase-functions/params");
 const admin = require("firebase-admin");
 const logger = require("firebase-functions/logger");
 const mqtt = require("mqtt");
+
+// Define environment parameters with defaults
+const mqttBrokerUrl = defineString("MQTT_BROKER_URL", {
+  description: "MQTT broker URL (mqtts://...)",
+  default: "",
+});
+
+const mqttUsername = defineString("MQTT_USERNAME", {
+  description: "MQTT broker username",
+  default: "",
+});
+
+const mqttPassword = defineString("MQTT_PASSWORD", {
+  description: "MQTT broker password",
+  default: "",
+});
+
+const mqttDeviceTopic = defineString("MQTT_DEVICE_TOPIC", {
+  description: "MQTT topic for device notifications",
+  default: "home/audio/device1",
+});
 
 // Initialize Firebase Admin
 admin.initializeApp();
@@ -62,11 +84,11 @@ exports.onAudioUpload = onObjectFinalized({
  */
 async function publishToMQTT(payload) {
   return new Promise((resolve, reject) => {
-    // Get MQTT configuration from environment variables
-    const brokerUrl = process.env.MQTT_BROKER_URL;
-    const username = process.env.MQTT_USERNAME;
-    const password = process.env.MQTT_PASSWORD;
-    const topic = process.env.MQTT_DEVICE_TOPIC || "home/audio/device1";
+    // Get MQTT configuration from params
+    const brokerUrl = mqttBrokerUrl.value();
+    const username = mqttUsername.value();
+    const password = mqttPassword.value();
+    const topic = mqttDeviceTopic.value();
 
     if (!brokerUrl || !username || !password) {
       const error = new Error("MQTT configuration missing");
@@ -88,13 +110,28 @@ async function publishToMQTT(payload) {
       protocol: "mqtts", // Use TLS
       port: 8883,
       rejectUnauthorized: true,
+      reconnectPeriod: 0, // Disable reconnect for cloud functions
+      connectTimeout: 5000,
+      clientId: `cloud-function-${Date.now()}`, // Unique ID per invocation
     });
+
+    // Timeout after 15 seconds
+    const timeoutId = setTimeout(() => {
+      if (!client.connected) {
+        logger.error("MQTT connection timeout");
+      } else {
+        logger.error("MQTT publish timeout");
+      }
+      client.end(true); // Force close
+      reject(new Error("MQTT operation timeout"));
+    }, 15000);
 
     client.on("connect", () => {
       logger.info("Connected to MQTT broker");
 
-      // Publish message
-      client.publish(topic, JSON.stringify(payload), {qos: 1}, (error) => {
+      // Publish message with QoS 0 for faster delivery
+      client.publish(topic, JSON.stringify(payload), {qos: 0}, (error) => {
+        clearTimeout(timeoutId);
         client.end();
 
         if (error) {
@@ -108,17 +145,10 @@ async function publishToMQTT(payload) {
     });
 
     client.on("error", (error) => {
+      clearTimeout(timeoutId);
       logger.error("MQTT connection error", {error});
       client.end();
       reject(error);
     });
-
-    // Timeout after 10 seconds
-    setTimeout(() => {
-      if (client.connected) {
-        client.end();
-      }
-      reject(new Error("MQTT publish timeout"));
-    }, 10000);
   });
 }
