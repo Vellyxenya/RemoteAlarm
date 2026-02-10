@@ -1,3 +1,5 @@
+﻿- 2026-02-10 11:53:22 : Refactored ESP32 firmware to use Kconfig for all credentials (WiFi SSID/Pass, MQTT URL/User/Pass/Topic). This prevents sensitive data from being hardcoded in main.c and committed to the repo.
+- 2026-02-10 11:51:13 : Finalized ESP32 firmware logic with ESP-ADF, including WiFi, MQTT (TLS), and audio pipeline (HTTP -> WAV -> I2S). Created CMake project structure.
 # Decision Log
 
 ## Template

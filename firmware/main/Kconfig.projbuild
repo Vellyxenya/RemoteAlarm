@@ -1,0 +1,33 @@
+﻿menu "Remote Alarm Configuration"
+
+    config EXAMPLE_WIFI_SSID
+        string "WiFi SSID"
+        default "YOUR_WIFI_SSID"
+        help
+            SSID of the WiFi network the ESP32 should connect to.
+
+    config EXAMPLE_WIFI_PASSWORD
+        string "WiFi Password"
+        default "YOUR_WIFI_PASSWORD"
+        help
+            Password of the WiFi network.
+
+    config MQTT_BROKER_URL
+        string "MQTT Broker URL"
+        default "mqtts://hivemq-broker"
+        help
+            URL of the MQTT broker.
+
+    config MQTT_USERNAME
+        string "MQTT Username"
+        default "esp32-device1"
+
+    config MQTT_PASSWORD
+        string "MQTT Password"
+        default "WakeupCeleste1"
+
+    config MQTT_TOPIC
+        string "MQTT Topic"
+        default "home/audio/device1"
+
+endmenu

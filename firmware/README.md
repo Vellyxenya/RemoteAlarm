@@ -1,42 +1,57 @@
-# RemoteAlarm ESP32 Firmware
+﻿# RemoteAlarm ESP32 Firmware
 
 ESP32-S3 firmware for receiving and playing audio notifications.
 
 ## Hardware
-- ESP32-S3 with audio capabilities (e.g., Waveshare AI Smart Speaker Board)
+- ESP32-S3 with audio capabilities (e.g., Waveshare AI Smart Speaker Board or ESP32-S3-KORVO-C)
 - Built-in speaker
 - WiFi connectivity
 
 ## Features
 - Connects to WiFi
-- Subscribes to MQTT topic over TLS
-- Receives signed download URLs
+- Subscribes to MQTT topic over TLS (HiveMQ Cloud support)
+- Receives JSON payload with signed audio URLs
 - Downloads audio files via HTTPS
-- Plays audio using ESP-ADF
+- Plays audio using ESP-ADF `audio_pipeline` (HTTP -> WAV -> I2S)
 
-## Setup
-1. Install ESP-IDF (v5.x recommended)
-2. Install ESP-ADF
-3. Configure WiFi and MQTT credentials:
+## Configuration Management (Secure Approach)
+
+This project uses the ESP-IDF Kconfig system to manage credentials. **Never hardcode WiFi or MQTT credentials in the source code.**
+
+### How it works:
+- **Kconfig.projbuild**: Defines the configuration interface.
+- **sdkconfig**: A local file generated when you configure the project. It contains your actual secrets and is **automatically ignored by git** (via `.gitignore`).
+- **main.c**: Uses `CONFIG_` macros that are populated from your `sdkconfig` during compilation.
+
+### Setting your Credentials:
+1. Navigate to the firmware directory:
+   ```bash
+   cd firmware
+   ```
+2. Open the configuration menu:
    ```bash
    idf.py menuconfig
    ```
-4. Build and flash:
+3. Navigate to the **"Remote Alarm Configuration"** menu.
+4. Enter your specific details:
+   - **WiFi SSID/Password**: Your local network credentials.
+   - **MQTT Broker**: The url of your HiveMQ cluster (e.g., `mqtts://...:8883`).
+   - **MQTT Username/Password**: The credentials created for the ESP32 in HiveMQ.
+   - **MQTT Topic**: Usually `home/audio/device1`.
+5. Save (`S`) and Quit (`Q`).
+
+## Build and Flash
+1. Ensure your ESP-IDF and ESP-ADF environment is sourced (e.g., `. $HOME/esp/esp-idf/export.sh`).
+2. Build the project:
    ```bash
    idf.py build
-   idf.py flash monitor
+   ```
+3. Flash to your device:
+   ```bash
+   idf.py -p <PORT> flash monitor
    ```
 
-## Configuration
-Set in menuconfig:
-- WiFi SSID and password
-- MQTT broker URL (HiveMQ)
-- MQTT username and password
-- MQTT device topic
-- Optional: HMAC secret key
-
 ## Dependencies
-- ESP-IDF (v5.x)
-- ESP-ADF (audio framework)
-- esp-mqtt component
-- esp-tls component
+- **ESP-IDF (v5.x)**
+- **ESP-ADF**: Required for the audio pipeline and I2S output.
+- **cJSON**: Used for parsing the MQTT notification payload.
