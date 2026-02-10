@@ -28,7 +28,6 @@ static const char *TAG = "REMOTE_ALARM";
 #define I2S_BCK_IO     (GPIO_NUM_17)
 #define I2S_WS_IO      (GPIO_NUM_18)
 #define I2S_DO_IO      (GPIO_NUM_16)
-#define I2S_SAMPLE_RATE 16000
 
 static EventGroupHandle_t wifi_event_group;
 static i2s_chan_handle_t tx_handle = NULL;
@@ -89,9 +88,10 @@ static void i2s_init(void) {
     i2s_chan_config_t chan_cfg = I2S_CHANNEL_DEFAULT_CONFIG(I2S_NUM_0, I2S_ROLE_MASTER);
     ESP_ERROR_CHECK(i2s_new_channel(&chan_cfg, &tx_handle, NULL));
 
+    // Initial config with default 16kHz - will be reconfigured when playing audio
     i2s_std_config_t std_cfg = {
-        .clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG(I2S_SAMPLE_RATE),
-        .slot_cfg = I2S_STD_PHILIPS_SLOT_DEFAULT_CONFIG(I2S_DATA_BIT_WIDTH_16BIT, I2S_SLOT_MODE_MONO),
+        .clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG(16000),
+        .slot_cfg = I2S_STD_PHILIPS_SLOT_DEFAULT_CONFIG(I2S_DATA_BIT_WIDTH_16BIT, I2S_SLOT_MODE_STEREO),
         .gpio_cfg = {
             .mclk = I2S_GPIO_UNUSED,
             .bclk = I2S_BCK_IO,
@@ -135,15 +135,32 @@ static void play_audio(const char *url) {
     int content_length = esp_http_client_fetch_headers(client);
     ESP_LOGI(TAG, "Content length: %d", content_length);
 
-    // Skip WAV header (44 bytes)
-    char header[44];
-    int read_len = esp_http_client_read(client, header, 44);
+    // Read WAV header (44 bytes)
+    uint8_t header[44];
+    int read_len = esp_http_client_read(client, (char*)header, 44);
     if (read_len != 44) {
         ESP_LOGE(TAG, "Failed to read WAV header");
         esp_http_client_close(client);
         esp_http_client_cleanup(client);
         return;
     }
+
+    // Parse WAV header
+    uint16_t num_channels = header[22] | (header[23] << 8);
+    uint32_t sample_rate = header[24] | (header[25] << 8) | (header[26] << 16) | (header[27] << 24);
+    uint16_t bits_per_sample = header[34] | (header[35] << 8);
+
+    ESP_LOGI(TAG, "WAV: %lu Hz, %u channels, %u bits", (unsigned long)sample_rate, (unsigned)num_channels, (unsigned)bits_per_sample);
+
+    // Reconfigure I2S with actual WAV parameters
+    i2s_std_clk_config_t clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG(sample_rate);
+    ESP_ERROR_CHECK(i2s_channel_reconfig_std_clock(tx_handle, &clk_cfg));
+
+    i2s_data_bit_width_t bit_width = (bits_per_sample == 16) ? I2S_DATA_BIT_WIDTH_16BIT : I2S_DATA_BIT_WIDTH_32BIT;
+    i2s_slot_mode_t slot_mode = (num_channels == 1) ? I2S_SLOT_MODE_MONO : I2S_SLOT_MODE_STEREO;
+    
+    i2s_std_slot_config_t slot_cfg = I2S_STD_PHILIPS_SLOT_DEFAULT_CONFIG(bit_width, slot_mode);
+    ESP_ERROR_CHECK(i2s_channel_reconfig_std_slot(tx_handle, &slot_cfg));
 
     // Stream audio data to I2S
     char *buffer = malloc(512);
