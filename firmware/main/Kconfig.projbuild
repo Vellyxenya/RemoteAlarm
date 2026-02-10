@@ -1,4 +1,4 @@
-﻿menu "Remote Alarm Configuration"
+menu "Remote Alarm Configuration"
 
     config EXAMPLE_WIFI_SSID
         string "WiFi SSID"
