@@ -31,7 +31,7 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyBHx1bhoKsGkr9MEoO-LrKGx1gfcKuhDHU',
+    apiKey: 'AIzaSyAytVJfhAahARRc6Xd0Sy02nAuLIiigyt4',
     appId: '1:503244947942:android:586db84b603383816a1627',
     messagingSenderId: '503244947942',
     projectId: 'remotealarm-be4d7',
@@ -39,7 +39,7 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyDTL2V3bKRI0Qfrl1m8kZl-K182yZWCvLU',
+    apiKey: 'AIzaSyCdqGOaPq6Yy0ZHz_svk-vRRKfs-HhC5sE',
     appId: '1:503244947942:ios:1c2586688fd184fa6a1627',
     messagingSenderId: '503244947942',
     projectId: 'remotealarm-be4d7',
