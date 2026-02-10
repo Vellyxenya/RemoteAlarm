@@ -9,6 +9,27 @@
 - Impact:
 
 ## Entries (newest first)
+- Date: 2026-02-10
+  Time (UTC+8): 11:15
+  Decision: Complete Phase 3 - HiveMQ Cloud broker setup with TLS and access controls.
+  Rationale: Set up HiveMQ Cloud free tier cluster with MQTTS on port 8883. Created two separate users for security: firebase-function (publish only) and esp32-device1 (subscribe for device and monitoring). Configured topic restrictions for home/audio/device1. Tested message delivery successfully through web client.
+  Alternatives: 1) Use single user for both publish and subscribe (causes connection conflicts). 2) Self-host Mosquitto broker (more complex, requires server management). 3) AWS IoT Core (certificate-based auth, overkill for MVP).
+  Impact: Secure MQTT broker operational. Separate credentials prevent connection conflicts between publisher and subscribers. Free tier sufficient for MVP. Ready for ESP32 firmware to connect and receive notifications.
+
+- Date: 2026-02-10
+  Time (UTC+8): 11:00
+  Decision: Complete Phase 2 - Cloud Function with MQTT publishing to HiveMQ.
+  Rationale: Implemented Cloud Function that triggers on Firebase Storage uploads, generates signed URLs, and publishes to HiveMQ broker via MQTTS. Migrated to firebase-functions/params package instead of deprecated functions.config(). Fixed MQTT timeout issues by using QoS 0, unique client IDs, and improved timeout handling. Created separate HiveMQ users (firebase-function for publishing, esp32-device1 for subscribing) to prevent connection conflicts. End-to-end pipeline verified working: Flutter app → Firebase Storage → Cloud Function → HiveMQ MQTT broker.
+  Alternatives: 1) Use QoS 1 for guaranteed delivery (slower, timed out). 2) Use same MQTT credentials for function and monitoring (causes disconnects). 3) Keep deprecated functions.config() (would break in March 2026).
+  Impact: Complete audio notification pipeline from mobile to MQTT. ESP32 firmware can now subscribe to receive audio URLs. Signed URLs provide secure time-limited access to audio files without exposing storage directly. Ready for Phase 4 ESP32 implementation.
+
+- Date: 2026-02-10
+  Time (UTC+8): 14:45
+  Decision: Migrate Cloud Functions from deprecated functions.config() to params package.
+  Rationale: Firebase deprecated functions.config() and Runtime Config service, scheduled for shutdown in March 2026. Migration required to prevent deployment failures. Using firebase-functions/params with defineString() provides type-safe, documented environment parameters with defaults. Parameters are set via --set-params flag during deployment instead of firebase functions:config:set.
+  Alternatives: 1) Enable legacy commands temporarily with firebase experiments:enable legacyRuntimeConfigCommands (short-term workaround only). 2) Use environment variables directly via process.env (less structured, no validation).
+  Impact: Functions code updated to use params API (MQTT_BROKER_URL, MQTT_USERNAME, MQTT_PASSWORD, MQTT_DEVICE_TOPIC). Deployment command changed to include --set-params. Local development uses .env file. Documentation updated with new deployment process. Migration ensures compatibility beyond March 2026 and provides better parameter management with validation and defaults.
+
 - Date: 2026-02-09
   Time (UTC+8): 16:30
   Decision: Complete Phase 1 - Flutter mobile app with audio recording and Firebase Storage upload.

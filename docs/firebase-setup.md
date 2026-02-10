@@ -98,9 +98,31 @@ Verify the rules in Firebase Console  Storage  Rules.
 
 After completing Phase 0:
 - Phase 1: Implement Flutter mobile app
-- Phase 2: Implement Cloud Functions
+- Phase 2: Implement Cloud Functions (see deployment notes below)
 - Phase 3: Set up MQTT broker (HiveMQ Cloud)
 - Phase 4: Implement ESP32 firmware
+
+## Cloud Functions Configuration (Params)
+
+### Setting Parameters with .env
+
+For local testing with Firebase Emulators:
+
+1. Copy `.env.example` to `.env` in the `functions/` directory
+2. Update the values with your actual credentials
+3. Run emulators: `firebase emulators:start`
+
+The `.env` file is gitignored and won't be committed.
+
+### Updating Parameters
+
+To update a parameter after deployment:
+
+```bash
+firebase functions:secrets:set MQTT_PASSWORD
+# Or for non-secret params
+firebase deploy --only functions --set-params MQTT_USERNAME="new-username"
+```
 
 ## Troubleshooting
 
