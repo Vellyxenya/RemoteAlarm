@@ -32,7 +32,8 @@ static const char *TAG = "REMOTE_ALARM";
 #define I2S_WS_IO      (GPIO_NUM_45)  // Connect to Amp LRC
 #define I2S_DO_IO      (GPIO_NUM_21)  // Connect to Amp DIN
 #define AUDIO_BUFFER_SIZE 16384
-#define RING_BUFFER_SIZE  49152 // 48KB - good balance for internal RAM
+#define RINGBUF_SIZE_KB 64
+#define RING_BUFFER_SIZE (RINGBUF_SIZE_KB * 1024)
 
 static EventGroupHandle_t wifi_event_group;
 static i2s_chan_handle_t tx_handle = NULL;
@@ -199,9 +200,11 @@ static void audio_playback_task(void *pvParameters) {
     
     ESP_LOGI(TAG, "WAV: %lu Hz, %u channels, %u bits", (unsigned long)sample_rate, (unsigned)num_channels, (unsigned)bits_per_sample);
 
-    // Disable channel before reconfiguring (only if not already disabled)
-    // Most times it's already disabled by the previous writer task
-    i2s_channel_disable(tx_handle);
+    // Disable channel before reconfiguring (ignore state errors)
+    esp_err_t dis_err = i2s_channel_disable(tx_handle);
+    if (dis_err != ESP_OK && dis_err != ESP_ERR_INVALID_STATE) {
+        ESP_LOGE(TAG, "Unexpected I2S disable error: %s", esp_err_to_name(dis_err));
+    }
 
     // Reconfigure I2S
     i2s_std_clk_config_t clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG(sample_rate);
@@ -211,7 +214,7 @@ static void audio_playback_task(void *pvParameters) {
     ESP_ERROR_CHECK(i2s_channel_reconfig_std_slot(tx_handle, &slot_cfg));
     ESP_ERROR_CHECK(i2s_channel_enable(tx_handle));
 
-    // Create ring buffer
+    // Create ring buffer (use a slightly larger buffer for better jitter tolerance)
     audio_rb = xRingbufferCreate(RING_BUFFER_SIZE, RINGBUF_TYPE_BYTEBUF);
     if (!audio_rb) {
         ESP_LOGE(TAG, "Failed to create audio ring buffer!");
@@ -222,19 +225,21 @@ static void audio_playback_task(void *pvParameters) {
         return;
     }
 
-    // Spawn Player task (Priority 15 - higher than this task)
-    xTaskCreate(i2s_write_task, "i2s_task", 4096, NULL, 15, &i2s_task_handle);
-
-    // Download and process chunks
+    // Wait until we have enough data to start playback (Jitter Buffer)
+    const int start_threshold = RING_BUFFER_SIZE / 2; // Start at 50% full
     char *chunk_buffer = malloc(4096);
     char *mono_buffer = malloc(4096);
     int sample_size = bits_per_sample / 8;
     int bytes_processed = 44;
+    bool player_started = false;
+
+    ESP_LOGI(TAG, "Buffering...");
 
     while (1) {
         int read_len = esp_http_client_read(client, chunk_buffer, 4096);
         if (read_len <= 0) break;
 
+        size_t push_len = 0;
         if (num_channels == 2) {
             int frames = read_len / (sample_size * 2);
             if (bits_per_sample == 16) {
@@ -250,15 +255,35 @@ static void audio_playback_task(void *pvParameters) {
                     dst[i] = src[i * 2];
                 }
             }
-            xRingbufferSend(audio_rb, mono_buffer, frames * sample_size, portMAX_DELAY);
+            push_len = frames * sample_size;
+            xRingbufferSend(audio_rb, mono_buffer, push_len, portMAX_DELAY);
         } else {
+            push_len = read_len;
             xRingbufferSend(audio_rb, chunk_buffer, read_len, portMAX_DELAY);
         }
         bytes_processed += read_len;
+
+        // Start playback once threshold is reached or download is tiny
+        if (!player_started) {
+            size_t buffered = RING_BUFFER_SIZE - xRingbufferGetCurFreeSize(audio_rb);
+            if (buffered >= start_threshold) {
+                ESP_LOGI(TAG, "Buffer threshold reached, starting playback");
+                xTaskCreate(i2s_write_task, "i2s_task", 4096, NULL, 15, &i2s_task_handle);
+                player_started = true;
+            }
+        }
     }
 
     // Signal completion
     audio_download_complete = true;
+    
+    // If download finished but player never started (tiny file), start it now
+    if (!player_started) {
+        ESP_LOGI(TAG, "Tiny file, starting playback immediately");
+        xTaskCreate(i2s_write_task, "i2s_task", 4096, NULL, 15, &i2s_task_handle);
+        player_started = true;
+    }
+
     ESP_LOGI(TAG, "Download complete (%d bytes), waiting for writer task to finish...", bytes_processed);
 
     // Wait for writer task to finish and self-delete

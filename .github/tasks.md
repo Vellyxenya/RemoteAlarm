@@ -78,9 +78,14 @@
   - Task 4.7: Prevent Replay / Spam
     - Ignore duplicate timestamps
     - Only accept messages with valid signature (optional)
-  - Task 4.8: Force Mono Output (Completed 2026-02-27)
-    - Update I2S configuration for Mono (Max98357A amplifier)
-    - Handle conversion if file is stereo
+  - Task 4.8: Audio Pipeline Optimization (Completed 2026-02-27)
+    - Forced Mono Mode for Max98357A (Initialization and Playback)
+    - Fixed Post-Playback Clicking (DMA buffer clearing + I2S Disable)
+    - Implemented Dual-Task Ring-Buffered Streaming (64KB RB)
+    - Added Jitter Buffer (32KB start threshold)
+    - Fixed Race Conditions and Panics in Ring Buffer Cleanup
+    - Added 1.2s DMA Drain Delay to prevent early audio cutoff
+    - Resolved `i2s_std_slot_config_t` compilation error
 
 - Phase 5 - MVP Testing Checklist
   - End-to-End Test
