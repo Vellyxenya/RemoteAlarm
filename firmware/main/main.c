@@ -252,36 +252,51 @@ static void audio_playback_task(void *pvParameters) {
     int sample_size = bits_per_sample / 8;
     int bytes_processed = 44;
     bool player_started = false;
+    int bytes_in_chunk = 0;
+    int frame_size = sample_size * num_channels;
 
     ESP_LOGI(TAG, "Buffering...");
 
     while (1) {
-        int read_len = esp_http_client_read(client, chunk_buffer, CHUNK_BUFFER_SIZE);
+        int read_len = esp_http_client_read(client, chunk_buffer + bytes_in_chunk, CHUNK_BUFFER_SIZE - bytes_in_chunk);
         if (read_len <= 0) break;
 
-        size_t push_len = 0;
-        if (num_channels == 2) {
-            int frames = read_len / (sample_size * 2);
-            if (bits_per_sample == 16) {
-                int16_t *src = (int16_t *)chunk_buffer;
-                int16_t *dst = (int16_t *)mono_buffer;
-                for (int i = 0; i < frames; i++) {
-                    dst[i] = src[i * 2];
+        int total_len = read_len + bytes_in_chunk;
+        int frames = total_len / frame_size;
+        int bytes_to_process = frames * frame_size;
+
+        if (frames > 0) {
+            size_t push_len = 0;
+            if (num_channels == 2) {
+                if (bits_per_sample == 16) {
+                    int16_t *src = (int16_t *)chunk_buffer;
+                    int16_t *dst = (int16_t *)mono_buffer;
+                    for (int i = 0; i < frames; i++) {
+                        dst[i] = src[i * 2];
+                    }
+                } else if (bits_per_sample == 32) {
+                    int32_t *src = (int32_t *)chunk_buffer;
+                    int32_t *dst = (int32_t *)mono_buffer;
+                    for (int i = 0; i < frames; i++) {
+                        dst[i] = src[i * 2];
+                    }
                 }
-            } else if (bits_per_sample == 32) {
-                int32_t *src = (int32_t *)chunk_buffer;
-                int32_t *dst = (int32_t *)mono_buffer;
-                for (int i = 0; i < frames; i++) {
-                    dst[i] = src[i * 2];
-                }
+                push_len = frames * sample_size;
+                xRingbufferSend(audio_rb, mono_buffer, push_len, portMAX_DELAY);
+            } else {
+                push_len = bytes_to_process;
+                xRingbufferSend(audio_rb, chunk_buffer, bytes_to_process, portMAX_DELAY);
             }
-            push_len = frames * sample_size;
-            xRingbufferSend(audio_rb, mono_buffer, push_len, portMAX_DELAY);
+            bytes_processed += bytes_to_process;
+
+            // Slide leftover bytes to the start of the buffer
+            bytes_in_chunk = total_len - bytes_to_process;
+            if (bytes_in_chunk > 0) {
+                memmove(chunk_buffer, chunk_buffer + bytes_to_process, bytes_in_chunk);
+            }
         } else {
-            push_len = read_len;
-            xRingbufferSend(audio_rb, chunk_buffer, read_len, portMAX_DELAY);
+            bytes_in_chunk = total_len; // Just keep the partial frame for next read
         }
-        bytes_processed += read_len;
 
         // Start playback once threshold is reached or download is tiny
         if (!player_started) {
@@ -289,7 +304,11 @@ static void audio_playback_task(void *pvParameters) {
             if (buffered >= start_threshold) {
                 ESP_LOGI(TAG, "Buffer threshold reached, starting playback");
                 ESP_ERROR_CHECK(i2s_channel_enable(tx_handle));
-                xTaskCreate(i2s_write_task, "i2s_task", 4096, NULL, 15, &i2s_task_handle);
+                if (xTaskCreate(i2s_write_task, "i2s_task", 4096, NULL, 15, &i2s_task_handle) != pdPASS) {
+                    ESP_LOGE(TAG, "Failed to create playback task!");
+                    i2s_task_handle = NULL;
+                    break;
+                }
                 player_started = true;
             }
         }
@@ -302,8 +321,12 @@ static void audio_playback_task(void *pvParameters) {
     if (!player_started) {
         ESP_LOGI(TAG, "Tiny file, starting playback immediately");
         ESP_ERROR_CHECK(i2s_channel_enable(tx_handle));
-        xTaskCreate(i2s_write_task, "i2s_task", 4096, NULL, 15, &i2s_task_handle);
-        player_started = true;
+        if (xTaskCreate(i2s_write_task, "i2s_task", 4096, NULL, 15, &i2s_task_handle) != pdPASS) {
+            ESP_LOGE(TAG, "Failed to create playback task!");
+            i2s_task_handle = NULL;
+        } else {
+            player_started = true;
+        }
     }
 
     ESP_LOGI(TAG, "Download complete (%d bytes), waiting for writer task to finish...", bytes_processed);
