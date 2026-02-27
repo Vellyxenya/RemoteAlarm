@@ -14,7 +14,6 @@
 #include "esp_tls.h"
 #include "cJSON.h"
 #include "driver/i2s_std.h"
-#include "esp_heap_caps.h"
 #include "freertos/ringbuf.h"
 
 static const char *TAG = "REMOTE_ALARM";
@@ -31,7 +30,7 @@ static const char *TAG = "REMOTE_ALARM";
 #define I2S_BCK_IO     (GPIO_NUM_47)  // Connect to Amp BCLK
 #define I2S_WS_IO      (GPIO_NUM_45)  // Connect to Amp LRC
 #define I2S_DO_IO      (GPIO_NUM_21)  // Connect to Amp DIN
-#define AUDIO_BUFFER_SIZE 16384
+#define CHUNK_BUFFER_SIZE 4096
 #define RINGBUF_SIZE_KB 64
 #define RING_BUFFER_SIZE (RINGBUF_SIZE_KB * 1024)
 
@@ -226,8 +225,8 @@ static void audio_playback_task(void *pvParameters) {
 
     // Wait until we have enough data to start playback (Jitter Buffer)
     const int start_threshold = RING_BUFFER_SIZE / 2; // Start at 50% full
-    char *chunk_buffer = malloc(4096);
-    char *mono_buffer = malloc(4096);
+    char *chunk_buffer = malloc(CHUNK_BUFFER_SIZE);
+    char *mono_buffer = malloc(CHUNK_BUFFER_SIZE);
     if (!chunk_buffer || !mono_buffer) {
         ESP_LOGE(TAG, "Failed to allocate audio buffers!");
         vRingbufferDelete(audio_rb);
@@ -247,7 +246,7 @@ static void audio_playback_task(void *pvParameters) {
     ESP_LOGI(TAG, "Buffering...");
 
     while (1) {
-        int read_len = esp_http_client_read(client, chunk_buffer, 4096);
+        int read_len = esp_http_client_read(client, chunk_buffer, CHUNK_BUFFER_SIZE);
         if (read_len <= 0) break;
 
         size_t push_len = 0;
