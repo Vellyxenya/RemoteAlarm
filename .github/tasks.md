@@ -86,6 +86,7 @@
     - Fixed Race Conditions and Panics in Ring Buffer Cleanup
     - Added 1.2s DMA Drain Delay to prevent early audio cutoff
     - Resolved `i2s_std_slot_config_t` compilation error
+    - Added WAV Format Validation (Fixed 16/32-bit check)
 
 - Phase 5 - MVP Testing Checklist
   - End-to-End Test

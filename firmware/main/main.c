@@ -199,6 +199,16 @@ static void audio_playback_task(void *pvParameters) {
     
     ESP_LOGI(TAG, "WAV: %lu Hz, %u channels, %u bits", (unsigned long)sample_rate, (unsigned)num_channels, (unsigned)bits_per_sample);
 
+    // Validate supported formats: 16/32-bit, 1/2 channels
+    if ((bits_per_sample != 16 && bits_per_sample != 32) || (num_channels != 1 && num_channels != 2)) {
+        ESP_LOGE(TAG, "Unsupported WAV format: %u-bit, %u channels (Only 16/32-bit, 1/2 channels supported)", bits_per_sample, num_channels);
+        esp_http_client_close(client);
+        esp_http_client_cleanup(client);
+        free(url);
+        vTaskDelete(NULL);
+        return;
+    }
+
     // Disable channel before reconfiguring (ignore state errors)
     esp_err_t dis_err = i2s_channel_disable(tx_handle);
     if (dis_err != ESP_OK && dis_err != ESP_ERR_INVALID_STATE) {
