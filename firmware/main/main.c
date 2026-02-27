@@ -25,11 +25,11 @@ static const char *TAG = "REMOTE_ALARM";
 #define MQTT_PASS      CONFIG_MQTT_PASSWORD
 #define MQTT_TOPIC     CONFIG_MQTT_TOPIC
 
-// I2S configuration - adjust these pins for your board
-#define I2S_BCK_IO     (GPIO_NUM_17)
-#define I2S_WS_IO      (GPIO_NUM_18)
-#define I2S_DO_IO      (GPIO_NUM_16)
-#define AUDIO_BUFFER_SIZE 4096
+// I2S configuration
+#define I2S_BCK_IO     (GPIO_NUM_47)  // Connect to Amp BCLK
+#define I2S_WS_IO      (GPIO_NUM_45)  // Connect to Amp LRC
+#define I2S_DO_IO      (GPIO_NUM_21)  // Connect to Amp DIN
+#define AUDIO_BUFFER_SIZE 16384
 
 static EventGroupHandle_t wifi_event_group;
 static i2s_chan_handle_t tx_handle = NULL;
@@ -93,7 +93,7 @@ static void i2s_init(void) {
     // Initial config with default 16kHz - will be reconfigured when playing audio
     i2s_std_config_t std_cfg = {
         .clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG(16000),
-        .slot_cfg = I2S_STD_PHILIPS_SLOT_DEFAULT_CONFIG(I2S_DATA_BIT_WIDTH_16BIT, I2S_SLOT_MODE_STEREO),
+        .slot_cfg = I2S_STD_PHILIPS_SLOT_DEFAULT_CONFIG(I2S_DATA_BIT_WIDTH_16BIT, I2S_SLOT_MODE_MONO),
         .gpio_cfg = {
             .mclk = I2S_GPIO_UNUSED,
             .bclk = I2S_BCK_IO,
@@ -156,15 +156,18 @@ static void play_audio(const char *url) {
 
     ESP_LOGI(TAG, "WAV: %lu Hz, %u channels, %u bits", (unsigned long)sample_rate, (unsigned)num_channels, (unsigned)bits_per_sample);
 
-    // Disable I2S before reconfiguration
-    ESP_ERROR_CHECK(i2s_channel_disable(tx_handle));
+    // Disable I2S before reconfiguration (if currently enabled)
+    esp_err_t disable_err = i2s_channel_disable(tx_handle);
+    if (disable_err != ESP_OK && disable_err != ESP_ERR_INVALID_STATE) {
+        ESP_ERROR_CHECK(disable_err);
+    }
 
     // Reconfigure I2S with actual WAV parameters
     i2s_std_clk_config_t clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG(sample_rate);
     ESP_ERROR_CHECK(i2s_channel_reconfig_std_clock(tx_handle, &clk_cfg));
 
     i2s_data_bit_width_t bit_width = (bits_per_sample == 16) ? I2S_DATA_BIT_WIDTH_16BIT : I2S_DATA_BIT_WIDTH_32BIT;
-    i2s_slot_mode_t slot_mode = (num_channels == 1) ? I2S_SLOT_MODE_MONO : I2S_SLOT_MODE_STEREO;
+    i2s_slot_mode_t slot_mode = I2S_SLOT_MODE_MONO; // Force mono for Max98357A
 
     i2s_std_slot_config_t slot_cfg = I2S_STD_PHILIPS_SLOT_DEFAULT_CONFIG(bit_width, slot_mode);
     ESP_ERROR_CHECK(i2s_channel_reconfig_std_slot(tx_handle, &slot_cfg));
@@ -181,9 +184,22 @@ static void play_audio(const char *url) {
         read_len = esp_http_client_read(client, buffer, AUDIO_BUFFER_SIZE);
         if (read_len <= 0) break;
         
-        i2s_channel_write(tx_handle, buffer, read_len, &bytes_written, portMAX_DELAY);
+        if (num_channels == 2) {
+            // Simple downmix: keep only one channel if stereo
+            int sample_size = bits_per_sample / 8;
+            int frames = read_len / (sample_size * 2);
+            for (int i = 0; i < frames; i++) {
+                memmove(buffer + i * sample_size, buffer + i * sample_size * 2, sample_size);
+            }
+            i2s_channel_write(tx_handle, buffer, frames * sample_size, &bytes_written, portMAX_DELAY);
+        } else {
+            i2s_channel_write(tx_handle, buffer, read_len, &bytes_written, portMAX_DELAY);
+        }
         total_read += read_len;
     }
+
+    // Disable I2S to stop any DMA clicking after playback
+    i2s_channel_disable(tx_handle);
 
     free(buffer);
     esp_http_client_close(client);

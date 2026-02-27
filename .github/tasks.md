@@ -78,6 +78,9 @@
   - Task 4.7: Prevent Replay / Spam
     - Ignore duplicate timestamps
     - Only accept messages with valid signature (optional)
+  - Task 4.8: Force Mono Output (Completed 2026-02-27)
+    - Update I2S configuration for Mono (Max98357A amplifier)
+    - Handle conversion if file is stereo
 
 - Phase 5 - MVP Testing Checklist
   - End-to-End Test

@@ -14,7 +14,7 @@ ESP32-S3 firmware for receiving and playing audio notifications.
 - Downloads audio files via HTTPS
 - Plays audio using ESP-ADF `audio_pipeline` (HTTP -> WAV -> I2S)
 
-## Configuration Management (Secure Approach)
+## Configuration Management
 
 This project uses the ESP-IDF Kconfig system to manage credentials. **Never hardcode WiFi or MQTT credentials in the source code.**
 
