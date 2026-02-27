@@ -212,7 +212,6 @@ static void audio_playback_task(void *pvParameters) {
     i2s_data_bit_width_t bit_width = (bits_per_sample == 16) ? I2S_DATA_BIT_WIDTH_16BIT : I2S_DATA_BIT_WIDTH_32BIT;
     i2s_std_slot_config_t slot_cfg = I2S_STD_PHILIPS_SLOT_DEFAULT_CONFIG(bit_width, I2S_SLOT_MODE_MONO);
     ESP_ERROR_CHECK(i2s_channel_reconfig_std_slot(tx_handle, &slot_cfg));
-    ESP_ERROR_CHECK(i2s_channel_enable(tx_handle));
 
     // Create ring buffer (use a slightly larger buffer for better jitter tolerance)
     audio_rb = xRingbufferCreate(RING_BUFFER_SIZE, RINGBUF_TYPE_BYTEBUF);
@@ -229,6 +228,18 @@ static void audio_playback_task(void *pvParameters) {
     const int start_threshold = RING_BUFFER_SIZE / 2; // Start at 50% full
     char *chunk_buffer = malloc(4096);
     char *mono_buffer = malloc(4096);
+    if (!chunk_buffer || !mono_buffer) {
+        ESP_LOGE(TAG, "Failed to allocate audio buffers!");
+        vRingbufferDelete(audio_rb);
+        audio_rb = NULL;
+        free(chunk_buffer);
+        free(mono_buffer);
+        esp_http_client_close(client);
+        esp_http_client_cleanup(client);
+        free(url);
+        vTaskDelete(NULL);
+        return;
+    }
     int sample_size = bits_per_sample / 8;
     int bytes_processed = 44;
     bool player_started = false;
@@ -268,6 +279,7 @@ static void audio_playback_task(void *pvParameters) {
             size_t buffered = RING_BUFFER_SIZE - xRingbufferGetCurFreeSize(audio_rb);
             if (buffered >= start_threshold) {
                 ESP_LOGI(TAG, "Buffer threshold reached, starting playback");
+                ESP_ERROR_CHECK(i2s_channel_enable(tx_handle));
                 xTaskCreate(i2s_write_task, "i2s_task", 4096, NULL, 15, &i2s_task_handle);
                 player_started = true;
             }
@@ -280,6 +292,7 @@ static void audio_playback_task(void *pvParameters) {
     // If download finished but player never started (tiny file), start it now
     if (!player_started) {
         ESP_LOGI(TAG, "Tiny file, starting playback immediately");
+        ESP_ERROR_CHECK(i2s_channel_enable(tx_handle));
         xTaskCreate(i2s_write_task, "i2s_task", 4096, NULL, 15, &i2s_task_handle);
         player_started = true;
     }
