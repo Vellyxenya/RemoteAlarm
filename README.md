@@ -52,7 +52,8 @@ See [docs/security.md](docs/security.md) for details.
 ### Prerequisites
 - Node.js and npm
 - Flutter SDK
-- ESP-IDF (v5.x) + ESP-ADF
+- ESP-IDF (v5.2+)
+- (Optional) ESP-ADF
 - Firebase account
 - HiveMQ Cloud account
 
