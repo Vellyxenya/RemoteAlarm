@@ -14,6 +14,8 @@
 #include "esp_tls.h"
 #include "cJSON.h"
 #include "driver/i2s_std.h"
+#include "esp_heap_caps.h"
+#include "freertos/ringbuf.h"
 
 static const char *TAG = "REMOTE_ALARM";
 
@@ -30,9 +32,13 @@ static const char *TAG = "REMOTE_ALARM";
 #define I2S_WS_IO      (GPIO_NUM_45)  // Connect to Amp LRC
 #define I2S_DO_IO      (GPIO_NUM_21)  // Connect to Amp DIN
 #define AUDIO_BUFFER_SIZE 16384
+#define RING_BUFFER_SIZE  49152 // 48KB - good balance for internal RAM
 
 static EventGroupHandle_t wifi_event_group;
 static i2s_chan_handle_t tx_handle = NULL;
+static RingbufHandle_t audio_rb = NULL;
+static TaskHandle_t i2s_task_handle = NULL;
+static volatile bool audio_download_complete = false;
 
 #define WIFI_CONNECTED_BIT BIT0
 
@@ -88,6 +94,9 @@ static void wifi_init(void) {
 
 static void i2s_init(void) {
     i2s_chan_config_t chan_cfg = I2S_CHANNEL_DEFAULT_CONFIG(I2S_NUM_0, I2S_ROLE_MASTER);
+    chan_cfg.dma_desc_num = 32;
+    chan_cfg.dma_frame_num = 480;
+    chan_cfg.auto_clear = true;
     ESP_ERROR_CHECK(i2s_new_channel(&chan_cfg, &tx_handle, NULL));
 
     // Initial config with default 16kHz - will be reconfigured when playing audio
@@ -116,8 +125,39 @@ static esp_err_t http_event_handler(esp_http_client_event_t *evt) {
     return ESP_OK;
 }
 
-static void play_audio(const char *url) {
-    ESP_LOGI(TAG, "Downloading audio from: %s", url);
+static void i2s_write_task(void *pvParameters) {
+    size_t item_size;
+    size_t bytes_written;
+    
+    ESP_LOGI(TAG, "I2S writer task started");
+    while (1) {
+        // Receive data from ring buffer
+        void *item = xRingbufferReceive(audio_rb, &item_size, pdMS_TO_TICKS(100));
+        if (item) {
+            i2s_channel_write(tx_handle, item, item_size, &bytes_written, portMAX_DELAY);
+            vRingbufferReturnItem(audio_rb, item);
+        } else if (audio_download_complete) {
+            // Buffer empty and download finished - double check one last time with 0-wait
+            void *last_check = xRingbufferReceive(audio_rb, &item_size, 0);
+            if (!last_check) break;
+            i2s_channel_write(tx_handle, last_check, item_size, &bytes_written, portMAX_DELAY);
+            vRingbufferReturnItem(audio_rb, last_check);
+        }
+    }
+    
+    ESP_LOGI(TAG, "I2S writer task finishing (waiting for DMA to drain)...");
+    
+    // Give enough time for the final ~1s of audio in the DMA buffer to clear
+    vTaskDelay(pdMS_TO_TICKS(1200));
+
+    i2s_channel_disable(tx_handle);
+    i2s_task_handle = NULL;
+    vTaskDelete(NULL);
+}
+
+static void audio_playback_task(void *pvParameters) {
+    char *url = (char *)pvParameters;
+    audio_download_complete = false;
 
     esp_http_client_config_t config = {
         .url = url,
@@ -133,78 +173,115 @@ static void play_audio(const char *url) {
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Failed to open HTTP connection: %s", esp_err_to_name(err));
         esp_http_client_cleanup(client);
+        free(url);
+        vTaskDelete(NULL);
         return;
     }
 
     int content_length = esp_http_client_fetch_headers(client);
-    ESP_LOGI(TAG, "Content length: %d", content_length);
+    ESP_LOGI(TAG, "Streaming audio (%d bytes)...", content_length);
 
-    // Read WAV header (44 bytes)
+    // Initial read for WAV header
     uint8_t header[44];
-    int read_len = esp_http_client_read(client, (char*)header, 44);
-    if (read_len != 44) {
+    int r = esp_http_client_read(client, (char*)header, 44);
+    if (r != 44) {
         ESP_LOGE(TAG, "Failed to read WAV header");
         esp_http_client_close(client);
         esp_http_client_cleanup(client);
+        free(url);
+        vTaskDelete(NULL);
         return;
     }
 
-    // Parse WAV header
     uint16_t num_channels = header[22] | (header[23] << 8);
     uint32_t sample_rate = header[24] | (header[25] << 8) | (header[26] << 16) | (header[27] << 24);
     uint16_t bits_per_sample = header[34] | (header[35] << 8);
-
+    
     ESP_LOGI(TAG, "WAV: %lu Hz, %u channels, %u bits", (unsigned long)sample_rate, (unsigned)num_channels, (unsigned)bits_per_sample);
 
-    // Disable I2S before reconfiguration (if currently enabled)
-    esp_err_t disable_err = i2s_channel_disable(tx_handle);
-    if (disable_err != ESP_OK && disable_err != ESP_ERR_INVALID_STATE) {
-        ESP_ERROR_CHECK(disable_err);
-    }
-
-    // Reconfigure I2S with actual WAV parameters
-    i2s_std_clk_config_t clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG(sample_rate);
-    ESP_ERROR_CHECK(i2s_channel_reconfig_std_clock(tx_handle, &clk_cfg));
-
-    i2s_data_bit_width_t bit_width = (bits_per_sample == 16) ? I2S_DATA_BIT_WIDTH_16BIT : I2S_DATA_BIT_WIDTH_32BIT;
-    i2s_slot_mode_t slot_mode = I2S_SLOT_MODE_MONO; // Force mono for Max98357A
-
-    i2s_std_slot_config_t slot_cfg = I2S_STD_PHILIPS_SLOT_DEFAULT_CONFIG(bit_width, slot_mode);
-    ESP_ERROR_CHECK(i2s_channel_reconfig_std_slot(tx_handle, &slot_cfg));
-
-    // Re-enable I2S after reconfiguration
-    ESP_ERROR_CHECK(i2s_channel_enable(tx_handle));
-
-    // Stream audio data to I2S
-    char *buffer = malloc(AUDIO_BUFFER_SIZE);
-    size_t bytes_written;
-    int total_read = 44;
-
-    while (1) {
-        read_len = esp_http_client_read(client, buffer, AUDIO_BUFFER_SIZE);
-        if (read_len <= 0) break;
-        
-        if (num_channels == 2) {
-            // Simple downmix: keep only one channel if stereo
-            int sample_size = bits_per_sample / 8;
-            int frames = read_len / (sample_size * 2);
-            for (int i = 0; i < frames; i++) {
-                memmove(buffer + i * sample_size, buffer + i * sample_size * 2, sample_size);
-            }
-            i2s_channel_write(tx_handle, buffer, frames * sample_size, &bytes_written, portMAX_DELAY);
-        } else {
-            i2s_channel_write(tx_handle, buffer, read_len, &bytes_written, portMAX_DELAY);
-        }
-        total_read += read_len;
-    }
-
-    // Disable I2S to stop any DMA clicking after playback
+    // Disable channel before reconfiguring (only if not already disabled)
+    // Most times it's already disabled by the previous writer task
     i2s_channel_disable(tx_handle);
 
-    free(buffer);
+    // Reconfigure I2S
+    i2s_std_clk_config_t clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG(sample_rate);
+    ESP_ERROR_CHECK(i2s_channel_reconfig_std_clock(tx_handle, &clk_cfg));
+    i2s_data_bit_width_t bit_width = (bits_per_sample == 16) ? I2S_DATA_BIT_WIDTH_16BIT : I2S_DATA_BIT_WIDTH_32BIT;
+    i2s_std_slot_config_t slot_cfg = I2S_STD_PHILIPS_SLOT_DEFAULT_CONFIG(bit_width, I2S_SLOT_MODE_MONO);
+    ESP_ERROR_CHECK(i2s_channel_reconfig_std_slot(tx_handle, &slot_cfg));
+    ESP_ERROR_CHECK(i2s_channel_enable(tx_handle));
+
+    // Create ring buffer
+    audio_rb = xRingbufferCreate(RING_BUFFER_SIZE, RINGBUF_TYPE_BYTEBUF);
+    if (!audio_rb) {
+        ESP_LOGE(TAG, "Failed to create audio ring buffer!");
+        esp_http_client_close(client);
+        esp_http_client_cleanup(client);
+        free(url);
+        vTaskDelete(NULL);
+        return;
+    }
+
+    // Spawn Player task (Priority 15 - higher than this task)
+    xTaskCreate(i2s_write_task, "i2s_task", 4096, NULL, 15, &i2s_task_handle);
+
+    // Download and process chunks
+    char *chunk_buffer = malloc(4096);
+    char *mono_buffer = malloc(4096);
+    int sample_size = bits_per_sample / 8;
+    int bytes_processed = 44;
+
+    while (1) {
+        int read_len = esp_http_client_read(client, chunk_buffer, 4096);
+        if (read_len <= 0) break;
+
+        if (num_channels == 2) {
+            int frames = read_len / (sample_size * 2);
+            if (bits_per_sample == 16) {
+                int16_t *src = (int16_t *)chunk_buffer;
+                int16_t *dst = (int16_t *)mono_buffer;
+                for (int i = 0; i < frames; i++) {
+                    dst[i] = src[i * 2];
+                }
+            } else if (bits_per_sample == 32) {
+                int32_t *src = (int32_t *)chunk_buffer;
+                int32_t *dst = (int32_t *)mono_buffer;
+                for (int i = 0; i < frames; i++) {
+                    dst[i] = src[i * 2];
+                }
+            }
+            xRingbufferSend(audio_rb, mono_buffer, frames * sample_size, portMAX_DELAY);
+        } else {
+            xRingbufferSend(audio_rb, chunk_buffer, read_len, portMAX_DELAY);
+        }
+        bytes_processed += read_len;
+    }
+
+    // Signal completion
+    audio_download_complete = true;
+    ESP_LOGI(TAG, "Download complete (%d bytes), waiting for writer task to finish...", bytes_processed);
+
+    // Wait for writer task to finish and self-delete
+    while (i2s_task_handle != NULL) {
+        vTaskDelay(pdMS_TO_TICKS(100));
+    }
+
+    vRingbufferDelete(audio_rb);
+    audio_rb = NULL;
+    free(chunk_buffer);
+    free(mono_buffer);
     esp_http_client_close(client);
     esp_http_client_cleanup(client);
-    ESP_LOGI(TAG, "Playback complete. Total bytes: %d", total_read);
+    free(url);
+    ESP_LOGI(TAG, "Playback task finished.");
+    vTaskDelete(NULL);
+}
+
+static void play_audio(const char *url) {
+    char *url_copy = strdup(url);
+    if (url_copy) {
+        xTaskCreate(audio_playback_task, "audio_task", 8192, url_copy, 10, NULL);
+    }
 }
 
 static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_t event_id, void *event_data) {
