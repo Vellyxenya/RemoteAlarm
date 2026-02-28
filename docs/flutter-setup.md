@@ -1,6 +1,6 @@
 # Flutter Setup Guide for Windows
 
-This guide helps you install and configure Flutter for the RemoteAlarm mobile app.
+Guide for Flutter installation and configuration for the RemoteAlarm mobile app.
 
 ## Prerequisites
 
@@ -25,10 +25,10 @@ This guide helps you install and configure Flutter for the RemoteAlarm mobile ap
 
 2. Type `flutter` and select **Flutter: New Project**
 
-3. VS Code will prompt you to locate the Flutter SDK
+3. VS Code prompts to locate the Flutter SDK
    - Select **Download SDK**
 
-4. When the **Select Folder for Flutter SDK** dialog displays, choose where you want to install Flutter
+4. When the **Select Folder for Flutter SDK** dialog displays, choose the install location
    - Recommended: `C:\src\flutter`
    - Click **Clone Flutter**
 
@@ -38,9 +38,9 @@ This guide helps you install and configure Flutter for the RemoteAlarm mobile ap
 
 6. Click **Add SDK to PATH** when prompted
 
-7. When successful, you'll see: "The Flutter SDK was added to your PATH"
+7. When successful, the message "The Flutter SDK was added to your PATH" will appear.
 
-8. If prompted about Google Analytics, click **OK** if you agree
+8. If prompted about Google Analytics, click **OK** to agree.
 
 9. **Important**: To ensure Flutter is available in all terminals:
    - Close and reopen all terminal windows
@@ -84,7 +84,7 @@ Run Flutter doctor again:
 flutter doctor -v
 ```
 
-You should see checkmarks for:
+Checkmarks for the following should appear:
 -  Flutter (SDK)
 -  Android toolchain
 -  VS Code

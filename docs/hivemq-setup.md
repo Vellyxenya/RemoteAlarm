@@ -1,6 +1,6 @@
 # HiveMQ Cloud MQTT Broker Setup
 
-This guide walks you through setting up a HiveMQ Cloud MQTT broker for the RemoteAlarm project.
+Guide to set up a HiveMQ Cloud MQTT broker for the RemoteAlarm project.
 
 ## Overview
 HiveMQ Cloud provides a free tier MQTT broker with TLS support, perfect for IoT devices like ESP32.
@@ -8,7 +8,7 @@ HiveMQ Cloud provides a free tier MQTT broker with TLS support, perfect for IoT 
 ## Step 1: Create HiveMQ Cloud Account
 
 1. Go to [HiveMQ Cloud Console](https://console.hivemq.cloud/)
-2. Click **Sign Up** (or **Login** if you have an account)
+2. Click **Sign Up** (or **Login** if account exists)
 3. Complete registration with email verification
 
 ## Step 2: Create a Cluster
@@ -16,7 +16,7 @@ HiveMQ Cloud provides a free tier MQTT broker with TLS support, perfect for IoT 
 1. After logging in, click **Create Cluster**
 2. Select **Serverless** (Free tier)
 3. Configure cluster:
-   - **Name**: `remotealarm` (or any name you prefer)
+   - **Name**: `remotealarm` (or preferred name)
    - **Region**: Choose closest to your location
    - **Plan**: Serverless (Free)
 4. Click **Create Cluster**
@@ -43,7 +43,7 @@ After cluster is created:
    - **Password**: Generate a strong password (e.g., `Str0ngP@ssw0rd!2026`)
    - **Description**: "ESP32 RemoteAlarm Device"
 4. Click **Add**
-5. **Important**: Save these credentials securely - you'll need them for:
+5. **Important**: Save these credentials securely - they are needed for:
    - Firebase Functions environment variables
    - ESP32 firmware configuration
 
@@ -60,7 +60,7 @@ After cluster is created:
 
 ## Step 6: Test Connection (Optional)
 
-You can test the broker using MQTT client tools:
+Test the broker using MQTT client tools:
 
 ### Using MQTT.fx or MQTTX
 1. Download [MQTTX](https://mqttx.app/) (cross-platform GUI client)
@@ -115,7 +115,7 @@ This deploys the `onAudioUpload` Cloud Function which will publish to your HiveM
 ## Troubleshooting
 
 ### Connection Refused
-- Verify you're using port `8883` for MQTTS
+- Verify usage of port `8883` for MQTTS
 - Check username/password are correct
 - Ensure SSL/TLS is enabled in your client
 

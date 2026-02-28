@@ -20,10 +20,10 @@ This project uses the ESP-IDF Kconfig system to manage credentials. **Never hard
 
 ### How it works:
 - **Kconfig.projbuild**: Defines the configuration interface.
-- **sdkconfig**: A local file generated when you configure the project. It contains your actual secrets and is **automatically ignored by git** (via `.gitignore`).
-- **main.c**: Uses `CONFIG_` macros that are populated from your `sdkconfig` during compilation.
+- **sdkconfig**: A local file generated during project configuration. It contains actual secrets and is **automatically ignored by git** (via `.gitignore`).
+- **main.c**: Uses `CONFIG_` macros that are populated from `sdkconfig` during compilation.
 
-### Setting your Credentials:
+### Setting Credentials:
 1. Navigate to the firmware directory:
    ```bash
    cd firmware
