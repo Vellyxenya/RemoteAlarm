@@ -1,25 +1,25 @@
-﻿# ESP32 (IDF & ADF) Setup Guide
+﻿# ESP32 (ESP-IDF v5.2+) Setup Guide
 
-This guide covers the installation of the ESP-IDF (development framework) and ESP-ADF (audio framework) required for building the RemoteAlarm firmware on Windows.
+This guide covers the installation of the ESP-IDF development framework required for building the RemoteAlarm firmware on Windows.
 
-## 1. Install ESP-IDF (v5.x)
+## 1. Install ESP-IDF (v5.2 or later)
 
-The ESP-IDF is the base framework for all ESP32 development.
+The RemoteAlarm firmware is optimized for ESP-IDF v5.2 features (like the new Standard I2S driver).
 
-### Automatic Installation (Recommended)
+### 1.1 Automatic Installation (Recommended)
 1. **Download**: Get the [ESP-IDF Windows Installer](https://dl.espressif.com/dl/esp-idf/) (Universal Online Installer).
 2. **Run Installer**: 
-   - Select the version (v5.1 or v5.2 are recommended).
+   - Select **ESP-IDF v5.2.x**.
    - The installer will handle downloading Python, Git, and the cross-compilers.
    - It will suggest a directory like `C:\Espressif`.
-3. **Verify**: Open the **"ESP-IDF 5.x PowerShell"** shortcut created on your desktop. Run:
+3. **Verify**: Open the **"ESP-IDF 5.2 PowerShell"** shortcut created on your desktop. Run:
    ```powershell
    idf.py --version
    ```
 
-### 1.1 Troubleshooting Compiler Selection (GCC/Clang)
-If you encounter errors where CMake cannot find a compiler (`No CMAKE_C_COMPILER could be found`), follow these steps which resolved the environment on this machine:
-1. **Framework Version**: Ensure you are using ESP-IDF **v5.2.x**.
+### 1.2 Troubleshooting Compiler Selection (GCC/Clang)
+If errors occur where CMake cannot find a compiler (`No CMAKE_C_COMPILER could be found`), follow these steps which resolved the environment on this machine:
+1. **Framework Version**: Ensure using ESP-IDF **v5.2.x**.
 2. **Clean Tools**: If a previous "Clang" installation is interfering, navigate to `C:\Espressif\tools\` and delete the `clang` compiler folder.
 3. **Set Toolchain Variable**: Explicitly tell the system to use the GCC toolchain by running:
    ```powershell
@@ -31,18 +31,18 @@ If you encounter errors where CMake cannot find a compiler (`No CMAKE_C_COMPILER
    idf.py set-target esp32s3
    ```
 
-## 2. Install ESP-ADF
+## 2. (Optional) Install ESP-ADF
 
-The ESP-ADF (Audio Development Framework) is an extension required for audio playback.
+While the current firmware uses plain ESP-IDF, install ESP-ADF for future expansion:
 
 1. **Clone the Repository**:
-   Open a terminal and navigate to where you want to keep the frameworks (e.g., `C:\Espressif`):
+   Navigate to desired frameworks location (e.g., `C:\Espressif`):
    ```powershell
    cd C:\Espressif
    git clone --recursive https://github.com/espressif/esp-adf.git
    ```
 2. **Set ADF_PATH**:
-   You must tell the build system where ADF is located.
+   The build system requires ADF location.
    - **Temporary (Current Session)**:
      ```powershell
      $env:ADF_PATH = "C:\Espressif\esp-adf"
@@ -55,7 +55,7 @@ The ESP-ADF (Audio Development Framework) is an extension required for audio pla
 
 ## 3. Configure the Project
 
-Once the tools are installed, you can configure your specific credentials.
+After installation, configure specific credentials.
 
 1. **Open the ESP-IDF Terminal**: Use the desktop shortcut mentioned in step 1.
 2. **Navigate to the workspace**:
@@ -81,7 +81,7 @@ Once the tools are installed, you can configure your specific credentials.
 2. Enter your details for:
    - **WiFi SSID & Password**: Your home network.
    - **MQTT Broker URL**: Found in your HiveMQ Cloud console (starts with `mqtts://`).
-   - **MQTT Username/Password**: The credentials you created for the device.
+   - **MQTT Username/Password**: Device credentials.
    - **MQTT Topic**: Set to `home/audio/device1`.
 3. Press **S** to save (keep the default filename `sdkconfig`), then **Q** to exit.
 
@@ -100,6 +100,6 @@ Once the tools are installed, you can configure your specific credentials.
 
 ## Troubleshooting
 
-- **idf.py not found**: Make sure you are using the specific **ESP-IDF PowerShell** shortcut, or you have run the export script (`. C:\Espressif\frameworks\esp-idf-v5.x\export.ps1`).
-- **ADF_PATH missing**: Verify that `echo $env:ADF_PATH` returns the correct path to your cloned `esp-adf` folder.
-- **Build Errors**: If you see errors related to `board.h`, ensure your board is supported or defined in `menuconfig -> Audio HAL`.
+- **idf.py not found**: Ensure use of the specific **ESP-IDF PowerShell** shortcut, or run the export script (`. C:\Espressif\frameworks\esp-idf-v5.x\export.ps1`).
+- **Build Errors**: Ensure configuration of WiFi and MQTT credentials in `Kconfig.projbuild` or via `idf.py menuconfig`.
+- **I2S Configuration**: Pin definitions (BCLK, WS, DOUT) are located in `firmware/main/main.c`. Verify these match your physical wiring.

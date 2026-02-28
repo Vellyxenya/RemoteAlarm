@@ -12,18 +12,18 @@ ESP32-S3 firmware for receiving and playing audio notifications.
 - Subscribes to MQTT topic over TLS (HiveMQ Cloud support)
 - Receives JSON payload with signed audio URLs
 - Downloads audio files via HTTPS
-- Plays audio using ESP-ADF `audio_pipeline` (HTTP -> WAV -> I2S)
+- Plays audio via direct `esp_http_client` streaming + `i2s_std` writes (HTTP → WAV header parsing → I2S)
 
-## Configuration Management (Secure Approach)
+## Configuration Management
 
 This project uses the ESP-IDF Kconfig system to manage credentials. **Never hardcode WiFi or MQTT credentials in the source code.**
 
 ### How it works:
 - **Kconfig.projbuild**: Defines the configuration interface.
-- **sdkconfig**: A local file generated when you configure the project. It contains your actual secrets and is **automatically ignored by git** (via `.gitignore`).
-- **main.c**: Uses `CONFIG_` macros that are populated from your `sdkconfig` during compilation.
+- **sdkconfig**: A local file generated during project configuration. It contains actual secrets and is **automatically ignored by git** (via `.gitignore`).
+- **main.c**: Uses `CONFIG_` macros that are populated from `sdkconfig` during compilation.
 
-### Setting your Credentials:
+### Setting Credentials:
 1. Navigate to the firmware directory:
    ```bash
    cd firmware
@@ -41,7 +41,7 @@ This project uses the ESP-IDF Kconfig system to manage credentials. **Never hard
 5. Save (`S`) and Quit (`Q`).
 
 ## Build and Flash
-1. Ensure your ESP-IDF and ESP-ADF environment is sourced (e.g., `. $HOME/esp/esp-idf/export.sh`).
+1. Ensure your ESP-IDF environment is sourced (e.g., `. $HOME/esp/esp-idf/export.sh`).
 2. Build the project:
    ```bash
    idf.py build # See [docs/esp-setup.md](../docs/esp-setup.md) if idf.py is not found
@@ -53,5 +53,4 @@ This project uses the ESP-IDF Kconfig system to manage credentials. **Never hard
 
 ## Dependencies
 - **ESP-IDF (v5.x)**
-- **ESP-ADF**: Required for the audio pipeline and I2S output.
 - **cJSON**: Used for parsing the MQTT notification payload.

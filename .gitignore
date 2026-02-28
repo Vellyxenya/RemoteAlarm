@@ -130,6 +130,7 @@ build/
 **/sdkconfig.old
 **/sdkconfig.defaults
 **/sdkconfig.*
+!**/sdkconfig.defaults.template
 **/managed_components/
 **/dependencies.lock
 **/cmake-build-*/

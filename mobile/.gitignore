@@ -18,8 +18,8 @@ migrate_working_dir/
 *.iws
 .idea/
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
+# The .vscode folder contains launch configuration and tasks configured in
+# VS Code which may be included in version control, so this line
 # is commented out by default.
 #.vscode/
 

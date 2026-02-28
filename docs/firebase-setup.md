@@ -70,7 +70,7 @@ This will open a browser for authentication.
    }
    ```
 
-   You can find your project ID in Firebase Console  Project Settings.
+   The project ID is found in Firebase Console  Project Settings.
 
 ## Step 4: Deploy Storage Security Rules
 
@@ -109,7 +109,7 @@ After completing Phase 0:
 For local testing with Firebase Emulators:
 
 1. Copy `.env.example` to `.env` in the `functions/` directory
-2. Update the values with your actual credentials
+2. Update the values with actual credentials
 3. Run emulators: `firebase emulators:start`
 
 The `.env` file is gitignored and won't be committed.
@@ -132,7 +132,7 @@ npm install -g firebase-tools
 ```
 
 ### Permission denied during deploy
-Make sure you're logged in:
+Ensure active login:
 ```bash
 firebase login --reauth
 ```

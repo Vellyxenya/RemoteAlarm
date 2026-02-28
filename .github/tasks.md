@@ -60,7 +60,7 @@
 - Phase 4 - ESP32 Firmware (Subscribe + Download + Play)
   - Task 4.1: Choose Board + Framework
     - Target board: Waveshare ESP32-S3 AI Smart RGB Speaker Dev Board
-    - Use: ESP-IDF + ESP-ADF
+    - Use: ESP-IDF v5.2+ (Transitioned from ESP-ADF for better stability)
   - Task 4.2: Connect to Wi-Fi
     - WPA2 network credentials stored securely
   - Task 4.3: Connect to MQTT Broker via TLS
@@ -72,12 +72,21 @@
   - Task 4.5: Download Audio via HTTPS
     - HTTPS GET signed URL
     - Stream directly (no full file buffering)
-  - Task 4.6: Play Audio with ESP-ADF
-    - Playback pipeline: HTTP stream reader  WAV decoder  I2S output
-    - Goal: Play message immediately after notification
+  - Task 4.6: Audio Playback (ESP-IDF v5.2 Standard I2S Mode)
+    - Playback pipeline: HTTPS stream reader -> Ring Buffer -> I2S Standard Mode Output
+    - Goal: Stream and play audio immediately without full file buffering.
   - Task 4.7: Prevent Replay / Spam
     - Ignore duplicate timestamps
     - Only accept messages with valid signature (optional)
+  - Task 4.8: Audio Pipeline Optimization (Completed 2026-02-27)
+    - Forced Mono Mode for Max98357A (Initialization and Playback)
+    - Fixed Post-Playback Clicking (DMA buffer clearing + I2S Disable)
+    - Implemented Dual-Task Ring-Buffered Streaming (64KB RB)
+    - Added Jitter Buffer (32KB start threshold)
+    - Fixed Race Conditions and Panics in Ring Buffer Cleanup
+    - Added 1.2s DMA Drain Delay to prevent early audio cutoff
+    - Resolved `i2s_std_slot_config_t` compilation error
+    - Added WAV Format Validation (Fixed 16/32-bit check)
 
 - Phase 5 - MVP Testing Checklist
   - End-to-End Test
