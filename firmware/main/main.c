@@ -27,9 +27,9 @@ static const char *TAG = "REMOTE_ALARM";
 #define MQTT_TOPIC     CONFIG_MQTT_TOPIC
 
 // I2S configuration
-#define I2S_BCK_IO     (GPIO_NUM_47)  // Connect to Amp BCLK
-#define I2S_WS_IO      (GPIO_NUM_45)  // Connect to Amp LRC
-#define I2S_DO_IO      (GPIO_NUM_21)  // Connect to Amp DIN
+#define I2S_BCK_IO     (GPIO_NUM_6)  // Connect to Amp BCLK
+#define I2S_WS_IO      (GPIO_NUM_5)  // Connect to Amp LRC
+#define I2S_DO_IO      (GPIO_NUM_12)  // Connect to Amp DIN
 #define CHUNK_BUFFER_SIZE 4096
 #define RINGBUF_SIZE_KB 64
 #define RING_BUFFER_SIZE (RINGBUF_SIZE_KB * 1024)
