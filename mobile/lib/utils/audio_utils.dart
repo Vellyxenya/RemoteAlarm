@@ -41,10 +41,16 @@ class AudioUtils {
 
     // 3. Process Audio Data (Resample & Downmix if needed)
     final firstData = _processAudioData(firstWav, targetSampleRate, targetChannels);
-    final secondData = _processAudioData(secondWav, targetSampleRate, targetChannels);
+    // Double volume for voice message
+    final secondData = _processAudioData(secondWav, targetSampleRate, targetChannels, gain: 2.0);
+
+    // Create 2 second silence
+    // 2 seconds * Sample Rate * 2 bytes/sample (16-bit) * Channels
+    final silenceBytes = 2 * targetSampleRate * 2 * targetChannels;
+    final silenceData = Uint8List(silenceBytes); // Zero-initialized by default
 
     // 4. Create new WAV file
-    final totalDataSize = firstData.length + secondData.length;
+    final totalDataSize = firstData.length + silenceData.length + secondData.length;
     final totalFileSize = 36 + totalDataSize;
 
     final outputHeader = Uint8List(44);
@@ -78,6 +84,7 @@ class AudioUtils {
     
     outputSink.add(outputHeader);
     outputSink.add(firstData);
+    outputSink.add(silenceData);
     outputSink.add(secondData);
     
     await outputSink.close();
@@ -152,7 +159,7 @@ class AudioUtils {
     return _WavInfo(infoSampleRate ?? 44100, infoChannels ?? 1, infoData);
   }
 
-  static Uint8List _processAudioData(_WavInfo wav, int targetRate, int targetChannels) {
+  static Uint8List _processAudioData(_WavInfo wav, int targetRate, int targetChannels, {double gain = 1.0}) {
     Int16List samples;
     
     // 1. Convert bytes to Int16 samples
@@ -180,30 +187,43 @@ class AudioUtils {
         monoSamples = samples;
     }
 
+    Int16List processedSamples;
+
     // 3. Resample using Linear Interpolation
     if (wav.sampleRate == targetRate) {
-        return monoSamples.buffer.asUint8List(monoSamples.offsetInBytes, monoSamples.lengthInBytes);
-    }
+        processedSamples = monoSamples;
+    } else {
+        final ratio = wav.sampleRate / targetRate;
+        final targetLength = (monoSamples.length / ratio).floor();
+        processedSamples = Int16List(targetLength);
 
-    final ratio = wav.sampleRate / targetRate;
-    final targetLength = (monoSamples.length / ratio).floor();
-    final resampled = Int16List(targetLength);
+        for (int i = 0; i < targetLength; i++) {
+            final position = i * ratio;
+            final index = position.floor();
+            final fraction = position - index;
 
-    for (int i = 0; i < targetLength; i++) {
-        final position = i * ratio;
-        final index = position.floor();
-        final fraction = position - index;
-
-        if (index + 1 < monoSamples.length) {
-            final a = monoSamples[index];
-            final b = monoSamples[index + 1];
-            resampled[i] = (a + (b - a) * fraction).round();
-        } else if (index < monoSamples.length) {
-            resampled[i] = monoSamples[index];
+            if (index + 1 < monoSamples.length) {
+                final a = monoSamples[index];
+                final b = monoSamples[index + 1];
+                processedSamples[i] = (a + (b - a) * fraction).round();
+            } else if (index < monoSamples.length) {
+                processedSamples[i] = monoSamples[index];
+            }
         }
     }
 
-    return resampled.buffer.asUint8List(resampled.offsetInBytes, resampled.lengthInBytes);
+    // 4. Apply Gain (Volume Boost)
+    if (gain != 1.0) {
+       for (int i = 0; i < processedSamples.length; i++) {
+          int val = (processedSamples[i] * gain).round();
+          // Clamp to 16-bit range to avoid overflow/distortion
+          if (val > 32767) val = 32767;
+          else if (val < -32768) val = -32768;
+          processedSamples[i] = val;
+       }
+    }
+
+    return processedSamples.buffer.asUint8List(processedSamples.offsetInBytes, processedSamples.lengthInBytes);
   }
 }
 
