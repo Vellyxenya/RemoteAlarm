@@ -1,4 +1,5 @@
 const {onObjectFinalized} = require("firebase-functions/v2/storage");
+const {onCall, HttpsError} = require("firebase-functions/v2/https");
 const {setGlobalOptions} = require("firebase-functions/v2");
 const {defineString} = require("firebase-functions/params");
 const admin = require("firebase-admin");
@@ -78,6 +79,100 @@ exports.onAudioUpload = onObjectFinalized({
 });
 
 /**
+ * Cloud Function to replay the last uploaded audio message (or a specific file)
+ * Can be called directly from the client application.
+ */
+exports.replayLastMessage = onCall({
+  cors: true,
+}, async (request) => {
+  // Check if authenticated (optional, but good practice)
+  // if (!request.auth) {
+  //   throw new HttpsError('failed-precondition',
+  //  'The function must be called while authenticated.');
+  // }
+
+  const bucketName = "remotealarm-be4d7.firebasestorage.app";
+  const bucket = admin.storage().bucket(bucketName);
+
+  // Safely access data, defaulting to empty object if null
+  const data = request.data || {};
+  let filePath = data.filePath;
+
+  try {
+    // If no file path provided, find the most recent file in audio/
+    if (!filePath) {
+      const [files] = await bucket.getFiles({
+        prefix: "audio/",
+        maxResults: 100, // Limit to reasonable number to sort
+      });
+
+      if (files.length === 0) {
+        logger.info("No audio files found to replay");
+        return {success: false, message: "No audio files found"};
+      }
+
+      // Sort by timeCreated descending with safety check
+      files.sort((a, b) => {
+        const timeA = (a.metadata && a.metadata.timeCreated) ?
+            new Date(a.metadata.timeCreated).getTime() : 0;
+        const timeB = (b.metadata && b.metadata.timeCreated) ?
+            new Date(b.metadata.timeCreated).getTime() : 0;
+        return timeB - timeA;
+      });
+
+      filePath = files[0].name;
+      logger.info("Found latest file to replay", {filePath});
+    }
+
+    // Reuse logic to generate URL and publish MQTT
+    await processAudioNotification(bucket, filePath);
+
+    return {success: true, message: "Replay triggered", filePath};
+  } catch (error) {
+    logger.error("Error replaying message", {error});
+    // Return specific error message to client
+    throw new HttpsError(
+        "internal",
+        error.message || "Unable to replay message",
+        {details: error.toString()},
+    );
+  }
+});
+
+/**
+ * Shared logic to generate signed URL and publish MQTT notification
+ * @param {Bucket} bucket - Storage bucket instance
+ * @param {string} filePath - Path to the audio file
+ */
+async function processAudioNotification(bucket, filePath) {
+  const file = bucket.file(filePath);
+
+  // Check if file exists
+  const [exists] = await file.exists();
+  if (!exists) {
+    throw new Error(`File ${filePath} does not exist`);
+  }
+
+  // Generate signed URL valid for 10 minutes
+  const [url] = await file.getSignedUrl({
+    action: "read",
+    expires: Date.now() + 10 * 60 * 1000,
+  });
+
+  logger.info("Generated signed URL for replay", {filePath, url});
+
+  // Prepare MQTT payload
+  const payload = {
+    file_url: url,
+    timestamp: new Date().toISOString(),
+    filename: filePath.split("/").pop(),
+  };
+
+  // Publish to MQTT broker
+  await publishToMQTT(payload);
+}
+
+/**
  * Publish message to MQTT broker
  * @param {Object} payload - Message payload to publish
  * @return {Promise} - Resolves when message is published
@@ -91,7 +186,8 @@ async function publishToMQTT(payload) {
     const topic = mqttDeviceTopic.value();
 
     if (!brokerUrl || !username || !password) {
-      const error = new Error("MQTT configuration missing");
+      const error =
+        new Error("MQTT configuration missing. Check defineString params.");
       logger.error("MQTT configuration not set", {
         hasBrokerUrl: !!brokerUrl,
         hasUsername: !!username,
@@ -117,11 +213,7 @@ async function publishToMQTT(payload) {
 
     // Timeout after 15 seconds
     const timeoutId = setTimeout(() => {
-      if (!client.connected) {
-        logger.error("MQTT connection timeout");
-      } else {
-        logger.error("MQTT publish timeout");
-      }
+      logger.error("MQTT operation timed out");
       client.end(true); // Force close
       reject(new Error("MQTT operation timeout"));
     }, 15000);
@@ -146,9 +238,9 @@ async function publishToMQTT(payload) {
 
     client.on("error", (error) => {
       clearTimeout(timeoutId);
-      logger.error("MQTT connection error", {error});
+      logger.error("MQTT connection error", {error: error.message});
       client.end();
-      reject(error);
+      reject(new Error(`MQTT Connection Error: ${error.message}`));
     });
   });
 }
