@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import '../services/audio_service.dart';
 import '../services/storage_service.dart';
 import '../utils/audio_utils.dart';
@@ -20,6 +21,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isRecording = false;
   bool _isUploading = false;
   bool _isPlaying = false;
+  bool _isReplaying = false;
   String? _recordedFilePath;
   String _status = 'Ready to record';
   
@@ -58,6 +60,49 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _initializeServices() async {
     await _audioService.initialize();
     await _storageService.initialize();
+  }
+
+  Future<void> _replayLastMessage() async {
+    try {
+      setState(() {
+        _status = 'Triggering replay...';
+        _isReplaying = true;
+      });
+
+      final functions = FirebaseFunctions.instance;
+      // Triggers replay of the latest file if no path is provided
+      final result = await functions
+          .httpsCallable('replayLastMessage')
+          .call();
+
+      debugPrint('Replay result: ${result.data}');
+
+      setState(() {
+        _status = 'Replay triggered successfully!';
+        _isReplaying = false;
+      });
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Replay triggered on device!'), backgroundColor: Colors.blue),
+        );
+      }
+    } catch (e) {
+      String errorMessage = '$e';
+      if (e is FirebaseFunctionsException) {
+        errorMessage = '${e.code}: ${e.message}';
+        if (e.details != null) {
+          errorMessage += '\nDetails: ${e.details}';
+        }
+      }
+      
+      setState(() {
+        _status = 'Error: $errorMessage';
+        _isReplaying = false;
+      });
+      
+      debugPrint('Replay Error Full: $e');
+    }
   }
 
   Future<void> _startRecording() async {
@@ -195,11 +240,12 @@ class _HomeScreenState extends State<HomeScreen> {
         title: const Text('RemoteAlarm'),
       ),
       body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
               Icon(
                 _isRecording ? Icons.mic : Icons.mic_none,
                 size: 100,
@@ -274,7 +320,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   minimumSize: const Size(200, 50),
                 ),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 16),
               
               // Upload button
               ElevatedButton.icon(
@@ -295,8 +341,35 @@ class _HomeScreenState extends State<HomeScreen> {
                   foregroundColor: Colors.white,
                 ),
               ),
+              const SizedBox(height: 32),
+
+              // Replay Latest Message Button (Always visible)
+              Column(
+                children: [
+                  const Divider(),
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    onPressed: _isReplaying ? null : _replayLastMessage,
+                    icon: _isReplaying 
+                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                        : const Icon(Icons.replay_circle_filled, size: 28),
+                    label: const Text('Replay Latest Message'),
+                    style: ElevatedButton.styleFrom(
+                      minimumSize: const Size(200, 50),
+                      backgroundColor: Colors.blueAccent,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    "Re-triggers the alarm with the last uploaded message",
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                ],
+              ),
             ],
           ),
+        ),
         ),
       ),
     );
