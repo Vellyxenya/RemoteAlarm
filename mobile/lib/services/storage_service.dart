@@ -15,7 +15,7 @@ class StorageService {
     }
   }
 
-  Future<void> uploadAudio(String filePath) async {
+  Future<String> uploadAudio(String filePath) async {
     // Ensure user is authenticated
     if (_auth.currentUser == null) {
       throw Exception('User not authenticated');
@@ -28,7 +28,8 @@ class StorageService {
 
     // Generate UUID for filename
     final fileName = '${_uuid.v4()}.wav';
-    final storageRef = _storage.ref().child('audio/$fileName');
+    final remotePath = 'audio/$fileName';
+    final storageRef = _storage.ref().child(remotePath);
 
     try {
       // Upload file
@@ -45,7 +46,8 @@ class StorageService {
       // Delete local file after successful upload
       await file.delete();
       
-      print('Audio uploaded successfully: audio/$fileName');
+      print('Audio uploaded successfully: $remotePath');
+      return remotePath;
     } catch (e) {
       throw Exception('Upload failed: $e');
     }
