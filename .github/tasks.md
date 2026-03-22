@@ -159,3 +159,43 @@
     - No wildcard access.
     - Goal: Random clients cannot listen in.
 
+
+- **Phase 1.5 - Alarm Prepending** (2026-03-22)
+  -  Task 1.5.1: Create Alarm Sounds
+    - Generated 1kHz and 2kHz (pulsed) sine wave WAV files (16kHz, Mono, 16-bit)
+    - Stored in mobile/assets/sounds/
+  -  Task 1.5.2: Implement WAV Merging Logic
+    - Created AudioUtils to parse WAV headers and merge data chunks
+    - Handles RIFF header updates (File size, Data size)
+  -  Task 1.5.3: Update Flutter UI
+    - Added Dropdown to select None, Alarm 1, Alarm 2
+    - Updated upload logic to prepend selected alarm sound before upload
+
+  -  Task 1.5.4: Implement Audio Playback
+    - Added audioplayers dependency
+    - Added Play/Stop button to preview recording before upload
+    - Implemented playback state management
+
+- **Phase 1.6 - Documentation**
+  -  Task 1.6.1: Add Mobile Testing Guide
+    - Created docs/mobile-testing.md with Emulator/Device instructions
+    - Linked in docs/README.md and mobile/README.md
+
+  -  Task 1.5.5: Fix Audio Sample Rate Mismatch
+    - Implemented audio resampling logic in AudioUtils
+    - Ensures recording matches alarm sample rate (16kHz)
+    - Prevents 'low pitch' / slow playback issues
+
+  -  Task 1.5.6: Upgrade Audio Quality (44.1kHz)
+    - Updated AudioService to record at 44.1kHz (High Quality)
+    - Replaced 'scary' continuous alarms with pleasant synthesized sounds (Ding, Chime, Two-Tone)
+    - All alarms regenerated at 44.1kHz
+
+  -  Task 1.5.7: Fix WAV Header Sample Rate Bug
+    - Updated AudioUtils to dynamically patch the WAV header Sample Rate and Byte Rate
+    - Ensures merged file header matches the actual data rate (fixes 'demon voice')
+
+  -  Task 1.5.8: Rewrite WAV Parser (Full RIFF)
+    - Replaced buggy hardcoded-offset parser with robust RIFF chunk parser
+    - Can now handle variable header sizes (e.g. LIST/JUNK chunks from Android)
+    - Generates a pristine clean WAV header for output, ensuring perfect sample rate matching

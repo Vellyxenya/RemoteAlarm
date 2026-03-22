@@ -1,6 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:audioplayers/audioplayers.dart';
 import '../services/audio_service.dart';
 import '../services/storage_service.dart';
+import '../utils/audio_utils.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -12,16 +15,44 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final AudioService _audioService = AudioService();
   final StorageService _storageService = StorageService();
+  final AudioPlayer _audioPlayer = AudioPlayer();
   
   bool _isRecording = false;
   bool _isUploading = false;
+  bool _isPlaying = false;
   String? _recordedFilePath;
   String _status = 'Ready to record';
+  
+  // Alarm selection
+  String _selectedAlarm = 'None';
+  final Map<String, String?> _alarmOptions = {
+    'None': null,
+    'Ding (Soft)': 'assets/sounds/alarm1.wav',
+    'Chime (Major Chord)': 'assets/sounds/alarm2.wav',
+    'Alert (Two-Tone)': 'assets/sounds/alarm3.wav',
+  };
 
   @override
   void initState() {
     super.initState();
     _initializeServices();
+    
+    _audioPlayer.onPlayerStateChanged.listen((state) {
+      if (mounted) {
+        setState(() {
+          _isPlaying = state == PlayerState.playing;
+        });
+      }
+    });
+
+    _audioPlayer.onPlayerComplete.listen((event) {
+      if (mounted) {
+        setState(() {
+          _isPlaying = false;
+          _status = 'Playback complete';
+        });
+      }
+    });
   }
 
   Future<void> _initializeServices() async {
@@ -30,6 +61,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _startRecording() async {
+    if (_isPlaying) {
+      await _audioPlayer.stop();
+    }
+    
     try {
       setState(() {
         _status = 'Recording...';
@@ -61,7 +96,33 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _playRecording() async {
+    if (_recordedFilePath != null) {
+      try {
+        await _audioPlayer.play(DeviceFileSource(_recordedFilePath!));
+        setState(() {
+          _status = 'Playing recording...';
+        });
+      } catch (e) {
+        setState(() {
+          _status = 'Playback error: $e';
+        });
+      }
+    }
+  }
+
+  Future<void> _stopPlayback() async {
+    await _audioPlayer.stop();
+    setState(() {
+      _status = 'Playback stopped';
+    });
+  }
+
   Future<void> _uploadAudio() async {
+    if (_isPlaying) {
+      await _audioPlayer.stop();
+    }
+    
     if (_recordedFilePath == null) {
       setState(() => _status = 'No recording to upload');
       return;
@@ -69,11 +130,33 @@ class _HomeScreenState extends State<HomeScreen> {
 
     try {
       setState(() {
-        _status = 'Uploading...';
+        _status = 'Preparing...';
         _isUploading = true;
       });
+      
+      String fileToUpload = _recordedFilePath!;
+      final alarmAsset = _alarmOptions[_selectedAlarm];
+      
+      if (alarmAsset != null) {
+        try {
+          setState(() => _status = 'Merging alarm sound...');
+          final alarmFile = await AudioUtils.extractAssetToTemp(alarmAsset);
+          fileToUpload = await AudioUtils.mergeWavFiles(alarmFile.path, _recordedFilePath!);
+        } catch (e) {
+          debugPrint('Error merging audio: $e');
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Failed to add alarm: $e. Uploading recording only.')),
+            );
+          }
+        }
+      }
 
-      await _storageService.uploadAudio(_recordedFilePath!);
+      setState(() {
+        _status = 'Uploading...';
+      });
+
+      await _storageService.uploadAudio(fileToUpload);
       
       setState(() {
         _status = 'Upload successful!';
@@ -128,7 +211,31 @@ class _HomeScreenState extends State<HomeScreen> {
                 style: Theme.of(context).textTheme.titleLarge,
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 60),
+              const SizedBox(height: 20),
+              
+              // Alarm Selection
+              DropdownButton<String>(
+                value: _selectedAlarm,
+                icon: const Icon(Icons.arrow_downward),
+                elevation: 16,
+                style: const TextStyle(color: Colors.deepPurple),
+                underline: Container(
+                  height: 2,
+                  color: Colors.deepPurpleAccent,
+                ),
+                onChanged: (_isRecording || _isUploading) ? null : (String? value) {
+                  setState(() {
+                    _selectedAlarm = value!;
+                  });
+                },
+                items: _alarmOptions.keys.map<DropdownMenuItem<String>>((String value) {
+                  return DropdownMenuItem<String>(
+                    value: value,
+                    child: Text(value),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 20),
               
               // Record button
               ElevatedButton.icon(
@@ -150,6 +257,19 @@ class _HomeScreenState extends State<HomeScreen> {
                 onPressed: _isRecording ? _stopRecording : null,
                 icon: const Icon(Icons.stop),
                 label: const Text('Stop Recording'),
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(200, 50),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Play button
+              ElevatedButton.icon(
+                onPressed: (_recordedFilePath != null && !_isRecording && !_isUploading)
+                    ? (_isPlaying ? _stopPlayback : _playRecording)
+                    : null,
+                icon: Icon(_isPlaying ? Icons.stop_circle_outlined : Icons.play_arrow),
+                label: Text(_isPlaying ? 'Stop Playback' : 'Play Recording'),
                 style: ElevatedButton.styleFrom(
                   minimumSize: const Size(200, 50),
                 ),

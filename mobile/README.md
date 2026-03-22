@@ -10,6 +10,7 @@ Flutter mobile application for recording and uploading short voice messages.
 - Firebase CLI and FlutterFire CLI
 
 See [../docs/flutter-setup.md](../docs/flutter-setup.md) for detailed setup instructions.
+See [../docs/mobile-testing.md](../docs/mobile-testing.md) for testing instructions (Device/Emulator).
 
 ### Installation
 
@@ -146,10 +147,3 @@ flutter clean
 flutter pub get
 flutter run
 ```
-
-## Next Steps
-
-After Phase 1 completion:
-- Phase 2: Cloud Functions will process uploads
-- Phase 3: MQTT broker will relay notifications
-- Phase 4: ESP32 will receive and play audio

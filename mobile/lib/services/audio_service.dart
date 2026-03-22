@@ -26,7 +26,7 @@ class AudioService {
         const RecordConfig(
           encoder: AudioEncoder.wav,
           bitRate: 128000,
-          sampleRate: 16000,
+          sampleRate: 44100,
         ),
         path: _recordingPath!,
       );
